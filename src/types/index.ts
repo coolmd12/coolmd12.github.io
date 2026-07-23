@@ -5,10 +5,14 @@ export type PracticeMode = 'live' | 'ai' | 'hybrid';
 export interface UserProfile {
   uid: string;
   email: string;
+  /** Discord-style unique handle; locked after signup. Missing on legacy accounts. */
+  username?: string;
   displayName: string;
   role: UserRole;
   school?: string;
   photoURL?: string;
+  /** Set when signup email code was consumed (Phase 1.7). */
+  emailVerifiedAt?: number;
   /** False for new accounts until they finish or skip the post-signup customize step. Missing = already set up (legacy). */
   profileSetupComplete?: boolean;
   createdAt: number;
@@ -18,6 +22,11 @@ export interface UserProfile {
 /** New signups set this to false; skip/save sets true. Legacy profiles without the field are treated as done. */
 export function needsProfileSetup(profile: UserProfile | null | undefined): boolean {
   return profile?.profileSetupComplete === false;
+}
+
+/** Legacy accounts created before Phase 1.7 must pick a username once. */
+export function needsUsername(profile: UserProfile | null | undefined): boolean {
+  return Boolean(profile && !profile.username);
 }
 
 export interface Classroom {

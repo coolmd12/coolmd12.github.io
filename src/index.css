@@ -129,13 +129,18 @@ textarea {
 }
 
 .brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2rem;
   height: 2rem;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.95) 0 18%, transparent 19%),
-    conic-gradient(from 20deg, var(--un-blue), #7ec8e8, var(--gold), var(--un-blue));
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .brand-text {
@@ -251,22 +256,21 @@ textarea {
   font-size: 0.85rem;
 }
 
-.req-mark,
+.req-mark {
+  color: #c62828;
+  font-size: 1.05em;
+  font-weight: 700;
+  margin-right: 0.2rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .opt-mark {
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  margin-left: 0.35rem;
-}
-
-.req-mark {
-  color: var(--navy);
-}
-
-.opt-mark {
-  color: var(--muted);
   font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-left: 0.35rem;
+  color: var(--muted);
   text-transform: none;
 }
 
@@ -291,8 +295,18 @@ textarea {
 .welcome-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.7rem;
   align-items: center;
+  margin-top: 0.15rem;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+  font-weight: 500;
 }
 
 .setup-chip {
@@ -739,10 +753,23 @@ textarea {
 }
 
 label {
-  display: grid;
-  gap: 0.35rem;
+  display: block;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+label > input,
+label > select,
+label > textarea,
+label > .field-hint {
+  display: block;
+  margin-top: 0.55rem;
+}
+
+label > .field-hint {
+  margin-top: 0.4rem;
+  font-weight: 500;
 }
 
 input,
@@ -751,7 +778,7 @@ textarea {
   width: 100%;
   border: 1px solid #c9d5e4;
   border-radius: 10px;
-  padding: 0.7rem 0.8rem;
+  padding: 0.8rem 0.9rem;
   background: #fff;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
@@ -766,8 +793,15 @@ textarea:focus {
 
 .role-fieldset {
   border: 1px solid var(--mist);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  padding: 0.95rem 1.05rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.role-fieldset legend {
+  padding: 0 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
 .role-option {
@@ -888,18 +922,31 @@ textarea:focus {
 .auth-panel,
 .panel {
   display: grid;
-  gap: 0.85rem;
+  gap: 1.15rem;
 }
 
 .auth-panel {
-  width: min(460px, 100%);
+  width: min(480px, 100%);
   margin: 0 auto;
-  padding: 1.65rem 1.55rem;
+  padding: 1.85rem 1.7rem;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--mist);
   border-radius: calc(var(--radius) + 4px);
   box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
+}
+
+.auth-panel form {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.auth-panel .btn-primary {
+  margin-top: 0.25rem;
+}
+
+.auth-panel h1 {
+  margin: 0 0 0.15rem;
 }
 
 .eyebrow {
@@ -1055,6 +1102,413 @@ textarea:focus {
 .auth-switch {
   margin: 0;
   text-align: center;
+  color: var(--muted);
+}
+
+.auth-switch a {
+  font-weight: 600;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.signup-shell {
+  min-height: calc(100vh - 4.25rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+}
+
+.signup-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 3rem;
+  color: #f3f6fa;
+  background:
+    linear-gradient(160deg, rgba(7, 21, 38, 0.88), rgba(11, 31, 58, 0.72)),
+    url('/signup-stage.jpg') center / cover no-repeat;
+  overflow: hidden;
+}
+
+.signup-stage::after {
+  content: '';
+  position: absolute;
+  inset: auto -10% -20% auto;
+  width: 55%;
+  height: 55%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 158, 219, 0.28), transparent 70%);
+  pointer-events: none;
+}
+
+.signup-stage-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 26rem;
+}
+
+.signup-stage-kicker {
+  margin: 0 0 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+
+.signup-stage-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+}
+
+.signup-stage-copy {
+  margin: 1rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: rgba(243, 246, 250, 0.86);
+}
+
+.signup-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(243, 246, 250, 0.92), rgba(232, 239, 247, 0.96));
+}
+
+.signup-card {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 0.85rem;
+}
+
+.signup-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(11, 31, 58, 0.1);
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.signup-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--navy), var(--un-blue), var(--gold));
+  transition: width 280ms ease;
+}
+
+.signup-step-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--un-blue-deep);
+}
+
+.signup-card h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3vw, 2.35rem);
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.12;
+}
+
+.signup-lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.signup-form {
+  display: grid;
+  gap: 1.15rem;
+  margin-top: 0.35rem;
+}
+
+.signup-chip {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(11, 31, 58, 0.05);
+  border: 1px solid rgba(11, 31, 58, 0.08);
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.signup-chip-ok {
+  background: rgba(31, 122, 77, 0.08);
+  border-color: rgba(31, 122, 77, 0.2);
+}
+
+.signup-field-grid {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.code-input {
+  font-size: 1.55rem !important;
+  letter-spacing: 0.42em;
+  text-align: center;
+  font-weight: 600;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.signup-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-btn {
+  border: none;
+  background: transparent;
+  color: var(--un-blue-deep);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.15rem;
+}
+
+.text-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dot-sep {
+  color: var(--muted);
+}
+
+.role-grid {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.role-card {
+  position: relative;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(11, 31, 58, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.role-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 158, 219, 0.35);
+}
+
+.role-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+.role-card-title {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.role-card-desc {
+  font-size: 0.86rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.role-card.selected {
+  border-color: rgba(0, 158, 219, 0.55);
+  background: rgba(0, 158, 219, 0.09);
+  box-shadow: 0 0 0 3px rgba(0, 158, 219, 0.12);
+}
+
+.signup-card .role-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.signup-card .role-fieldset legend {
+  padding: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.signup-card .banner {
+  margin: 0.15rem 0 0;
+}
+
+.signup-card .auth-switch {
+  margin-top: 0.35rem;
+}
+
+.login-shell {
+  min-height: calc(100vh - 4.25rem);
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+}
+
+.login-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(243, 246, 250, 0.92), rgba(232, 239, 247, 0.96));
+}
+
+.login-card {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 0.85rem;
+}
+
+.login-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--un-blue-deep);
+}
+
+.login-card h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.95rem, 3vw, 2.45rem);
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.1;
+}
+
+.login-lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: grid;
+  gap: 1.15rem;
+  margin-top: 0.35rem;
+}
+
+.login-card .banner {
+  margin: 0.1rem 0 0;
+}
+
+.login-card .auth-switch {
+  margin-top: 0.25rem;
+}
+
+.login-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 3rem;
+  color: #f3f6fa;
+  background:
+    linear-gradient(200deg, rgba(7, 21, 38, 0.86), rgba(11, 61, 92, 0.58)),
+    url('/login-stage.jpg') center / cover no-repeat;
+  overflow: hidden;
+}
+
+.login-stage::after {
+  content: '';
+  position: absolute;
+  inset: -15% auto auto -10%;
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 163, 90, 0.22), transparent 70%);
+  pointer-events: none;
+}
+
+.login-stage-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 26rem;
+}
+
+.login-stage-kicker {
+  margin: 0 0 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+
+.login-stage-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.3rem, 4vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.login-stage-copy {
+  margin: 1rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: rgba(243, 246, 250, 0.88);
+}
+
+@media (max-width: 900px) {
+  .signup-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .signup-stage {
+    min-height: 220px;
+    padding: 1.75rem 1.4rem;
+    align-items: center;
+  }
+
+  .signup-stage-title {
+    font-size: 2rem;
+  }
+
+  .signup-side {
+    padding: 1.75rem 1.15rem 2.5rem;
+  }
+
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .login-stage {
+    min-height: 220px;
+    padding: 1.75rem 1.4rem;
+    align-items: center;
+    order: -1;
+  }
+
+  .login-stage-title {
+    font-size: 2rem;
+  }
+
+  .login-side {
+    padding: 1.75rem 1.15rem 2.5rem;
+  }
 }
 
 @media (max-width: 860px) {

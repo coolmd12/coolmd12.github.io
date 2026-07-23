@@ -12,11 +12,12 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
-  setDoc,
   updateDoc,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase';
+import { validateDisplayName, validateUsername } from '../lib/username';
+import { checkSignupToken, consumeSignupToken } from './emailVerification';
 import type { UserProfile, UserRole } from '../types';
 
 function requireAuthDb() {
@@ -41,40 +42,150 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function authErrorMessage(err: unknown): string {
+  const code =
+    err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
+  if (code === 'auth/email-already-in-use') {
+    return 'An account with this email already exists. Log in instead, or use a different email.';
+  }
+  if (code === 'auth/weak-password') {
+    return 'Password is too weak. Use at least 6 characters.';
+  }
+  if (code === 'auth/invalid-email') {
+    return 'That email address looks invalid.';
+  }
+  if (code === 'permission-denied') {
+    return 'Firestore blocked the profile write. Publish the latest firebase/firestore.rules, then try again with a fresh verification code.';
+  }
+  return err instanceof Error ? err.message : 'Could not create account.';
+}
+
 export async function registerUser(input: {
   email: string;
   password: string;
+  username: string;
+  displayName: string;
   role: UserRole;
+  signupToken: string;
 }): Promise<UserProfile> {
   const { auth: a, db: database } = requireAuthDb();
   const email = input.email.trim().toLowerCase();
-  const cred = await createUserWithEmailAndPassword(a, email, input.password);
+  const signupToken = input.signupToken.trim();
 
-  const localPart = email.split('@')[0] || 'Delegate';
-  const displayName = localPart
-    .replace(/[._-]+/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim()
-    .slice(0, 80) || 'Delegate';
+  const usernameCheck = validateUsername(input.username);
+  if (!usernameCheck.ok) throw new Error(usernameCheck.error);
+  const displayCheck = validateDisplayName(input.displayName);
+  if (!displayCheck.ok) throw new Error(displayCheck.error);
 
+  if (!signupToken) {
+    throw new Error('Verify your email before creating an account.');
+  }
+
+  // Validate without consuming so retries still work if profile write fails.
+  await checkSignupToken(email, signupToken);
+
+  const usernameRef = doc(database, 'usernames', usernameCheck.username);
+  const existingName = await getDoc(usernameRef);
+  if (existingName.exists()) {
+    throw new Error('That username is already taken.');
+  }
+
+  let cred;
+  try {
+    cred = await createUserWithEmailAndPassword(a, email, input.password);
+  } catch (err) {
+    throw new Error(authErrorMessage(err));
+  }
+
+  const emailVerifiedAt = Date.now();
   const profile: UserProfile = {
     uid: cred.user.uid,
     email,
-    displayName,
+    username: usernameCheck.username,
+    displayName: displayCheck.displayName,
     role: input.role,
+    emailVerifiedAt,
     profileSetupComplete: false,
     createdAt: Date.now(),
     classroomIds: [],
   };
 
-  // Write Firestore profile before other awaits so auth-state handlers see the real role.
-  await setDoc(doc(database, 'users', cred.user.uid), {
-    ...profile,
-    createdAtServer: serverTimestamp(),
-  });
-  await updateProfile(cred.user, { displayName });
+  try {
+    await runTransaction(database, async (tx) => {
+      const taken = await tx.get(usernameRef);
+      if (taken.exists()) {
+        throw new Error('That username is already taken.');
+      }
+      tx.set(usernameRef, {
+        uid: cred.user.uid,
+        createdAt: Date.now(),
+      });
+      tx.set(doc(database, 'users', cred.user.uid), {
+        ...profile,
+        createdAtServer: serverTimestamp(),
+      });
+    });
+  } catch (err) {
+    try {
+      await cred.user.delete();
+    } catch (cleanupErr) {
+      console.warn('Could not roll back Auth user after failed profile write', cleanupErr);
+    }
+    const code =
+      err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
+    if (code === 'permission-denied') {
+      throw new Error(authErrorMessage(err));
+    }
+    throw err instanceof Error ? err : new Error('Could not create profile.');
+  }
 
+  try {
+    const consumed = await consumeSignupToken(email, signupToken);
+    if (consumed.emailVerifiedAt) {
+      await updateDoc(doc(database, 'users', cred.user.uid), {
+        emailVerifiedAt: consumed.emailVerifiedAt,
+      });
+      profile.emailVerifiedAt = consumed.emailVerifiedAt;
+    }
+  } catch (consumeErr) {
+    // Account is already created; don't fail signup if one-time consume races.
+    console.warn('Could not consume signup token after register', consumeErr);
+  }
+
+  await updateProfile(cred.user, { displayName: displayCheck.displayName });
   return profile;
+}
+
+/** One-time username claim for legacy accounts created before Phase 1.7. */
+export async function claimUsername(rawUsername: string): Promise<UserProfile> {
+  const { auth: a, db: database } = requireAuthDb();
+  const user = a.currentUser;
+  if (!user) throw new Error('You must be signed in to choose a username.');
+
+  const usernameCheck = validateUsername(rawUsername);
+  if (!usernameCheck.ok) throw new Error(usernameCheck.error);
+
+  const existing = await fetchUserProfile(user.uid);
+  if (!existing) throw new Error('Profile not found.');
+  if (existing.username) throw new Error('Username is already set and cannot be changed.');
+
+  const usernameRef = doc(database, 'usernames', usernameCheck.username);
+  const userRef = doc(database, 'users', user.uid);
+
+  await runTransaction(database, async (tx) => {
+    const taken = await tx.get(usernameRef);
+    if (taken.exists()) throw new Error('That username is already taken.');
+    const snap = await tx.get(userRef);
+    if (!snap.exists()) throw new Error('Profile not found.');
+    const data = snap.data() as UserProfile;
+    if (data.username) throw new Error('Username is already set and cannot be changed.');
+    tx.set(usernameRef, { uid: user.uid, createdAt: Date.now() });
+    tx.update(userRef, { username: usernameCheck.username });
+  });
+
+  const next = await fetchUserProfile(user.uid);
+  if (!next) throw new Error('Profile not found.');
+  return next;
 }
 
 export async function loginUser(email: string, password: string) {
@@ -104,7 +215,7 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
   }
 
   const { db: database } = requireAuthDb();
-  const ref = doc(database, 'users', user.uid);
+  const refDoc = doc(database, 'users', user.uid);
   const fallback: UserProfile = {
     uid: user.uid,
     email: (user.email || '').toLowerCase(),
@@ -117,9 +228,9 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
 
   // Create-only: never overwrite a profile signup just finished writing.
   return runTransaction(database, async (tx) => {
-    const snap = await tx.get(ref);
+    const snap = await tx.get(refDoc);
     if (snap.exists()) return snap.data() as UserProfile;
-    tx.set(ref, {
+    tx.set(refDoc, {
       ...fallback,
       createdAtServer: serverTimestamp(),
     });
@@ -172,9 +283,14 @@ export async function updateUserProfile(input: {
   const existing = await fetchUserProfile(user.uid);
   if (!existing) throw new Error('Profile not found.');
 
-  const displayName =
+  let displayName =
     input.displayName !== undefined ? input.displayName.trim() : existing.displayName;
   if (!displayName) throw new Error('Display name is required.');
+  if (input.displayName !== undefined) {
+    const check = validateDisplayName(input.displayName);
+    if (!check.ok) throw new Error(check.error);
+    displayName = check.displayName;
+  }
 
   const nextSchool =
     input.school !== undefined ? input.school.trim() || undefined : existing.school;
@@ -248,16 +364,54 @@ export async function uploadProfilePhoto(file: File): Promise<string> {
   const user = a.currentUser;
   if (!user) throw new Error('You must be signed in to upload a photo.');
 
-  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-  if (!allowed.includes(file.type)) {
-    throw new Error('Use a JPG, PNG, or WebP image.');
+  const contentType = resolveImageContentType(file);
+  if (!contentType) {
+    throw new Error('Use a JPG, PNG, or WebP image (HEIC from iPhone is not supported yet).');
   }
   if (file.size > 2 * 1024 * 1024) {
     throw new Error('Image must be under 2 MB.');
   }
 
-  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  const ext = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
   const objectRef = ref(bucket, `avatars/${user.uid}/avatar.${ext}`);
-  await uploadBytes(objectRef, file, { contentType: file.type });
-  return getDownloadURL(objectRef);
+  try {
+    await uploadBytes(objectRef, file, { contentType });
+    return await getDownloadURL(objectRef);
+  } catch (err) {
+    throw new Error(storageErrorMessage(err));
+  }
+}
+
+function resolveImageContentType(file: File): 'image/jpeg' | 'image/png' | 'image/webp' | null {
+  const type = (file.type || '').toLowerCase();
+  if (type === 'image/jpeg' || type === 'image/jpg') return 'image/jpeg';
+  if (type === 'image/png') return 'image/png';
+  if (type === 'image/webp') return 'image/webp';
+
+  // Windows sometimes leaves file.type empty — fall back to extension.
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+  if (name.endsWith('.png')) return 'image/png';
+  if (name.endsWith('.webp')) return 'image/webp';
+  return null;
+}
+
+function storageErrorMessage(err: unknown): string {
+  const code =
+    err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
+  if (code === 'storage/unauthorized') {
+    return 'Photo upload blocked by Storage rules. Publish firebase/storage.rules in Firebase Console.';
+  }
+  if (code === 'storage/retry-limit-exceeded' || code === 'storage/unknown') {
+    return 'Could not reach Firebase Storage. Enable Storage in Firebase Console (Build → Storage → Get started), then try again.';
+  }
+  if (code === 'storage/canceled') {
+    return 'Upload canceled.';
+  }
+  if (code === 'storage/quota-exceeded') {
+    return 'Storage quota exceeded. Try a smaller image.';
+  }
+  return err instanceof Error
+    ? err.message
+    : 'Could not upload photo. Enable Firebase Storage and publish storage rules.';
 }

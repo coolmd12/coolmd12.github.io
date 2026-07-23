@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `wrangler dev` (never commit .dev.vars)
+RESEND_API_KEY=re_xxxxxxxx
+SIGNUP_TOKEN_SECRET=replace-with-long-random-string
+FROM_EMAIL=GoMUN Delegate Arena <onboarding@resend.dev>

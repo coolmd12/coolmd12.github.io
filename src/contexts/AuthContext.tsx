@@ -10,6 +10,7 @@ import {
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../lib/firebase';
 import {
+  claimUsername,
   ensureUserProfile,
   loginUser,
   logoutUser,
@@ -26,8 +27,12 @@ interface AuthContextValue {
   register: (input: {
     email: string;
     password: string;
+    username: string;
+    displayName: string;
     role: UserRole;
+    signupToken: string;
   }) => Promise<void>;
+  claimUsername: (username: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -71,13 +76,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const register = useCallback(
-    async (input: { email: string; password: string; role: UserRole }) => {
+    async (input: {
+      email: string;
+      password: string;
+      username: string;
+      displayName: string;
+      role: UserRole;
+      signupToken: string;
+    }) => {
       const p = await registerUser(input);
       setUser(auth?.currentUser ?? null);
       setProfile(p);
     },
     [],
   );
+
+  const claimUsernameFn = useCallback(async (username: string) => {
+    const p = await claimUsername(username);
+    setProfile(p);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     await loginUser(email, password);
@@ -96,10 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured: isFirebaseConfigured,
       refreshProfile,
       register,
+      claimUsername: claimUsernameFn,
       login,
       logout,
     }),
-    [user, profile, loading, refreshProfile, register, login, logout],
+    [user, profile, loading, refreshProfile, register, claimUsernameFn, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
