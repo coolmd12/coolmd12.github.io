@@ -25,13 +25,16 @@ Classroom-private **Model UN practice** for students and teachers: invite-code r
 | --- | --- |
 | **Teacher** | Create classroom, share invite, chair later |
 | **Student** | Join with code, practice |
+| **Both (planned)** | Same person can teach one room and join another as a delegate |
 | **Parent / guardian** | Later — not built |
+
+**Direction:** stop treating student/teacher as mutually exclusive account types. Keep **per-classroom** membership role as the real permission; let the account hold multiple capabilities (`roles[]`). Details in [ROADMAP.md](./ROADMAP.md).
 
 ---
 
 ## User flow (today)
 
-1. Sign up: email → **code** → password + **username** + display name + role  
+1. Sign up: email (block if already registered) → **code** → password + **username** + display name + role  
 2. Welcome: optional school (Skip OK) · avatars = **initials**  
 3. Dashboard → classroom → practice / conferences / profile  
 
@@ -45,9 +48,11 @@ Account is created only when the user finishes signup and clicks **Create accoun
 | --- | --- |
 | Landing, classrooms, invites | Done |
 | Secure signup (email code + username) | Done |
+| Early email-already-exists on step 1 | Done (`emails/` + Auth lookup) |
 | Profile / welcome (school; initials) | Done |
 | Signup / login UI polish | Done |
 | Role-aware UX | In progress |
+| Multi-role (student **and** teacher) | Planned (Phase 1.6+) |
 | Profile photos (Storage) | Paused (Blaze) |
 | Live committee room | **Next — Phase 2** |
 | AI (Gemini) | Phase 3 |
@@ -78,8 +83,8 @@ Worker: `workers/email-verification/` · Rules: `firebase/firestore.rules`
 
 ## Build order
 
-1. Harden signup ops (rules published, Worker live, real Resend domain for public users)  
-2. Finish role-aware UX (Phase 1.6)  
+1. Harden signup ops (rules published — including `emails/` — Worker live, real Resend domain for public users)  
+2. Finish role-aware UX + **multi-role accounts** (Phase 1.6)  
 3. **Phase 2** live committee (speakers, motions, timers)  
 4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
 5. Photos when Blaze is OK  
