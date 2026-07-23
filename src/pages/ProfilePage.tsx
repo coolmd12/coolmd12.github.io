@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { updateUserProfile, uploadProfilePhoto } from '../services/auth';
+import { updateUserProfile } from '../services/auth';
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -14,21 +14,17 @@ function initialsFromName(name: string) {
 
 export function ProfilePage() {
   const { profile, refreshProfile } = useAuth();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState('');
   const [school, setSchool] = useState('');
-  const [photoURL, setPhotoURL] = useState<string | undefined>();
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
     setDisplayName(profile.displayName);
     setSchool(profile.school || '');
-    setPhotoURL(profile.photoURL);
   }, [profile]);
 
   if (!profile) {
@@ -40,6 +36,7 @@ export function ProfilePage() {
   }
 
   const current = profile;
+  const initials = initialsFromName(displayName || current.displayName);
 
   async function onSave(e: FormEvent) {
     e.preventDefault();
@@ -60,53 +57,6 @@ export function ProfilePage() {
     }
   }
 
-  async function onPhotoPick(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-
-    setError('');
-    setOk('');
-    setUploading(true);
-    try {
-      const url = await uploadProfilePhoto(file);
-      await updateUserProfile({
-        displayName: displayName.trim() || current.displayName,
-        school,
-        photoURL: url,
-      });
-      setPhotoURL(url);
-      await refreshProfile();
-      setOk('Photo updated.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not upload photo.');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function onRemovePhoto() {
-    setError('');
-    setOk('');
-    setBusy(true);
-    try {
-      await updateUserProfile({
-        displayName: displayName.trim() || current.displayName,
-        school,
-        photoURL: null,
-      });
-      setPhotoURL(undefined);
-      await refreshProfile();
-      setOk('Photo removed.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove photo.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const initials = initialsFromName(displayName || current.displayName);
-
   return (
     <main className="shell profile-page">
       <header className="page-header">
@@ -119,46 +69,18 @@ export function ProfilePage() {
         </Link>
       </header>
 
-      <form className="auth-panel profile-panel" onSubmit={onSave}>
+      <form className="auth-panel profile-panel" onSubmit={(e) => void onSave(e)}>
         {error ? <p className="banner error">{error}</p> : null}
         {ok ? <p className="banner ok">{ok}</p> : null}
 
         <div className="profile-avatar-row">
           <div className="avatar avatar-lg" aria-hidden="true">
-            {photoURL ? (
-              <img src={photoURL} alt="" />
-            ) : (
-              <span>{initials}</span>
-            )}
+            <span>{initials}</span>
           </div>
-          <div className="profile-avatar-actions">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              hidden
-              onChange={(e) => void onPhotoPick(e)}
-            />
-            <button
-              type="button"
-              className="btn btn-ghost"
-              disabled={uploading || busy}
-              onClick={() => fileRef.current?.click()}
-            >
-              {uploading ? 'Uploading…' : 'Upload photo'}
-            </button>
-            {photoURL ? (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={uploading || busy}
-                onClick={() => void onRemovePhoto()}
-              >
-                Remove
-              </button>
-            ) : null}
-            <p className="muted profile-hint">JPG, PNG, or WebP · under 2 MB</p>
-          </div>
+          <p className="muted profile-hint">
+            Photos are off for now so we can stay on Firebase’s free plan. Your initials show
+            instead.
+          </p>
         </div>
 
         <label>
@@ -169,6 +91,12 @@ export function ProfilePage() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
+        </label>
+
+        <label>
+          Username
+          <input value={current.username ? `@${current.username}` : 'Not set'} disabled readOnly />
+          <span className="field-hint">Usernames are locked after signup (Discord-style).</span>
         </label>
 
         <label>
@@ -191,7 +119,7 @@ export function ProfilePage() {
           <input value={current.role} disabled readOnly />
         </label>
 
-        <button className="btn btn-primary" type="submit" disabled={busy || uploading}>
+        <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? 'Saving…' : 'Save changes'}
         </button>
       </form>

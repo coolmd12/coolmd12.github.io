@@ -16,8 +16,9 @@ export function LandingPage() {
           <h1 className="hero-brand">GoMUN</h1>
           <p className="hero-title">Delegate Arena</p>
           <p className="hero-lede">
-            Practice Model UN the way conferences actually run — live with your class, or
-            solo with AI delegates — without paying a cent.
+            Our vision is for you to practice Model United Nations like an expert, find and
+            compete in more and more conferences, and become the powerful delegate you were
+            meant to be — without paying a cent.
           </p>
           <div className="hero-cta">
             {signedIn ? (
@@ -76,9 +77,9 @@ export function LandingPage() {
           <div>
             <h2>Classroom-private. Conference-real.</h2>
             <p>
-              Teachers open a private room with an invite code. Students join their group —
-              speeches, motions, and meetings stay inside that circle, like Google Classroom
-              for MUN.
+              GoMUN allows teachers to open a private room with an invite code. Students join
+              their group — speeches, motions, and meetings stay inside that circle, like Google
+              Classroom for MUN.
             </p>
           </div>
           <ul className="feature-list">
@@ -134,11 +135,15 @@ export function LandingPage() {
             <p className="eyebrow">Meet the founder</p>
             <h2>Dhyanvi Mehta</h2>
             <p>
-              GoMUN Delegate Arena was built by Dhyanvi Mehta — a student who wanted free,
-              serious MUN practice that feels like a real conference, not a paywalled
-              simulator. From Best Delegate wins to building this platform, her goal is
-              simple: help clubs and classrooms train together, speak with confidence, and
-              show up ready for the next committee session.
+              Hi! I’m Dhyanvi Mehta — founder of GoMUN Delegate Arena. I started Model United
+              Nations (MUN) when I was in 8th grade, and I remember that I really loved it! And
+              I thought…no one should be deprived of MUN’s amazing experiences, from meeting new
+              people to strengthening communication to getting recognized for hard work that you
+              put in. So, I wanted to bring this opportunity to each and every one of you, in
+              hopes that this completely FREE website (no hidden charges) will make you become a
+              symbol of confidence who has truly found their potential. Honorary delegates,
+              ladies, and gentlemen, get ready for the next committee session. It’s time to
+              GoMUN!
             </p>
           </div>
           <div className="founder-collage" aria-label="Photos of founder Dhyanvi Mehta">

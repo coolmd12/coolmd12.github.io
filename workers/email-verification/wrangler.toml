@@ -1,0 +1,13 @@
+name = "gomun-email-verify"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+
+# After: npx wrangler kv namespace create EMAIL_VERIFY
+# replace id below with the returned namespace id.
+[[kv_namespaces]]
+binding = "EMAIL_VERIFY"
+id = "194dd6cc3d6b48a1bafc684d8a0aa2d5"
+
+[vars]
+# Optional allowlist of frontend origins (comma-separated). Empty = reflect request Origin in dev.
+ALLOWED_ORIGINS = "https://coolmd12.github.io,http://localhost:5173"

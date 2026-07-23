@@ -24,19 +24,51 @@ service cloud.firestore {
           == request.auth.uid;
     }
 
+    function validUsername(value) {
+      return value is string
+        && value.size() >= 3
+        && value.size() <= 32
+        && value.matches('^[a-z0-9]([a-z0-9._]*[a-z0-9])?$');
+    }
+
     match /users/{userId} {
       allow read: if isSelf(userId)
         || (signedIn() && resource.data.keys().hasAll(['displayName', 'role']));
       allow create: if isSelf(userId)
-        && request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt'])
+        && request.resource.data.keys().hasAll([
+          'uid', 'email', 'username', 'displayName', 'role', 'createdAt'
+        ])
         && request.resource.data.uid == userId
         && request.resource.data.role in ['student', 'teacher']
-        && request.resource.data.email == request.auth.token.email;
+        && request.resource.data.email == request.auth.token.email.lower()
+        && validUsername(request.resource.data.username);
       allow update: if isSelf(userId)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
-        && request.resource.data.role in ['student', 'teacher'];
+        && request.resource.data.role in ['student', 'teacher']
+        && (
+          // Username immutable once set; legacy users may set it once.
+          (
+            !('username' in resource.data)
+            && validUsername(request.resource.data.username)
+          )
+          || (
+            'username' in resource.data
+            && request.resource.data.username == resource.data.username
+          )
+        );
       allow delete: if false;
+    }
+
+    match /usernames/{username} {
+      // Public read so signup can check availability before Auth account exists.
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && validUsername(username);
+      allow update, delete: if false;
     }
 
     match /inviteCodes/{code} {
