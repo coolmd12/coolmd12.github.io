@@ -64,7 +64,7 @@ export function ChooseUsernamePage() {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase())}
-            placeholder="dhyanvi_m"
+            placeholder="ex: dhyanvi_m"
           />
           <span className="field-hint">Letters, numbers, underscores, and periods only.</span>
         </label>

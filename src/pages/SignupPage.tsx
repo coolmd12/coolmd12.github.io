@@ -208,7 +208,7 @@ export function SignupPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@school.edu"
+                  placeholder="ex: you@gmail.com"
                 />
               </label>
               <button
@@ -291,7 +291,7 @@ export function SignupPage() {
                     maxLength={32}
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                    placeholder="dhyanvi_m"
+                    placeholder="ex: dhyanvi_m"
                   />
                   <span className="field-hint">Unique @handle. Locked after signup.</span>
                 </label>
@@ -304,7 +304,7 @@ export function SignupPage() {
                     maxLength={80}
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Dhyanvi Mehta"
+                    placeholder="ex: Dhyanvi Mehta"
                   />
                   <span className="field-hint">Shown in classrooms. Editable later.</span>
                 </label>

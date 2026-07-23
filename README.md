@@ -8,6 +8,8 @@ Live site: [https://coolmd12.github.io](https://coolmd12.github.io)
 
 Founded by **Dhyanvi Mehta**.
 
+Docs: [OUTLINE.md](./OUTLINE.md) (short overview) · [ROADMAP.md](./ROADMAP.md) (full plan)
+
 ---
 
 ## What this is
@@ -17,13 +19,15 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Feature | Status |
 | --- | --- |
 | Email/password accounts (**student** / **teacher**) | Done |
-| Email verification **code** before signup + Discord-style username | Phase 1.7 |
+| Email verification **code** + Discord-style **username** | Done (Phase 1.7) |
 | Private classrooms + invite codes | Done |
-| Post-signup optional customize (school; Skip OK; photos paused) | Done |
-| Profile page (display name, school; username locked; initials avatar) | Done |
+| Post-signup optional customize (school; Skip OK) | Done |
+| Profile (display name, school; username locked; **initials** avatar) | Done |
 | Conference directory (links to real organizers) | Done (basic) |
+| Polished signup / login layouts | Done |
 | Role-aware UI (signed out vs student vs teacher) | In progress |
-| Parent / guardian accounts | Later (see roadmap) |
+| Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
+| Parent / guardian accounts | Later |
 | Live committee room (speakers, motions, timers) | Next (Phase 2) |
 | AI practice with Gemini (solo / hybrid) | Later (Phase 3) |
 
@@ -35,36 +39,37 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 ## How a user flows through the app
 
-1. **Sign up** — enter email → type the **verification code** from Resend → create one GoMUN password, unique **username**, **display name**, and role (student / teacher)  
-2. **Welcome** — optional school/club and photo only (or **Skip for now**); username + display name are already set  
+1. **Sign up** — email → **6-digit verification code** → GoMUN password + unique **username** + **display name** + role  
+2. **Welcome** — optional school/club only (or **Skip**); username + display name already set; avatars use **initials**  
 3. **Dashboard** — teachers create classrooms; students join with an invite code  
 4. **Classroom** — members list, invite sharing, optional Meet/Zoom links  
-5. **Practice / Conferences / Profile** — explore practice modes, find real MUNs, edit profile anytime  
+5. **Practice / Conferences / Profile** — explore modes, find real MUNs, edit profile anytime  
 
-Signed-in users see Dashboard CTAs instead of Sign up on the home page. More role-specific layouts are on the roadmap.
+Signed-in users see Dashboard CTAs instead of Sign up on the home page.
 
 ### Account security (Discord-style)
 
 | Field | Required? | Notes |
 | --- | --- | --- |
-| Email | Yes | Must pass a **6-digit code** sent to that inbox before the account is created |
-| GoMUN password | Yes | One site password — never ask for the user’s Gmail/Outlook password |
-| Username | Yes | Unique `@handle` (`a-z`, `0-9`, `_`, `.`); **locked** after signup |
-| Display name | Yes | Friendly name shown in rooms; editable later |
-| Role | Yes | Student / teacher today; **parent / guardian** planned later |
-| Photo, school | Optional | Welcome step or Profile; Skip allowed |
+| Email | Yes | **6-digit code** before the Auth account is created |
+| GoMUN password | Yes | One site password — never the user’s Gmail/Outlook password |
+| Username | Yes | Unique `@handle`; **locked** after signup |
+| Display name | Yes | Shown in rooms; editable later |
+| Role | Yes | Student / teacher today; parent / guardian later |
+| School | Optional | Welcome or Profile; Skip OK |
+| Photo | Paused | Initials only until Firebase Storage (Blaze) is acceptable |
 
-Email codes are sent by **Resend** through a **Cloudflare Worker** (`workers/email-verification/`) so `RESEND_API_KEY` never ships in the Vite/`VITE_*` frontend. See that folder’s README for deploy steps.
+Email codes: **Resend** + **Cloudflare Worker** (`workers/email-verification/`). Never put `RESEND_API_KEY` in `VITE_*` env.
 
 ---
 
 ## Stack
 
-- **Frontend:** React + TypeScript + Vite  
+- **Frontend:** React + TypeScript + Vite (dev server locked to port **5173**)  
 - **Auth / data:** Firebase Auth + Cloud Firestore (Spark / free tier)  
-- **Email codes:** Resend + Cloudflare Worker (no Firebase Blaze required)  
-- **Photos:** paused for now (initials avatars) — Firebase Storage needs Blaze; revisit later  
-- **Hosting:** GitHub Pages (Vite build → `dist/` via GitHub Actions)
+- **Email codes:** Resend + Cloudflare Worker (no Firebase Blaze required for mail)  
+- **Photos:** paused — initials avatars (Storage needs Blaze)  
+- **Hosting:** GitHub Pages (`dist/` via GitHub Actions)
 
 ---
 
@@ -73,20 +78,17 @@ Email codes are sent by **Resend** through a **Cloudflare Worker** (`workers/ema
 1. `npm install`
 2. Copy `.env.example` → `.env.local` and fill:
    - Firebase web config (`VITE_FIREBASE_*`)
-   - `VITE_EMAIL_VERIFY_URL` (your deployed Cloudflare Worker base URL, no trailing slash)
-3. In [Firebase Console](https://console.firebase.google.com/):
-   - Enable **Email/Password** authentication  
-   - Create a **Firestore** database  
-   - (Optional later) Enable **Storage** for profile photos when you’re ready for Blaze  
-4. Deploy / paste rules:
-   - `firebase/firestore.rules`
-   - `firebase/storage.rules` (only once Storage is enabled)
-5. Deploy the email-verification Worker (see `workers/email-verification/README.md`) with Resend + KV secrets  
-6. `npm run dev` → [http://localhost:5173](http://localhost:5173)
+   - `VITE_EMAIL_VERIFY_URL` (Worker URL, no trailing slash)
+3. Firebase Console:
+   - Enable **Email/Password** auth  
+   - Create **Firestore**  
+   - Publish rules from `firebase/firestore.rules`  
+4. Deploy email Worker — see `workers/email-verification/README.md`
+5. `npm run dev` → [http://localhost:5173](http://localhost:5173)
 
-In-app checklist: open `/setup`.
+In-app checklist: `/setup`.
 
-**Tip:** create one teacher account and one student account (incognito) so you can test create + join.
+**Tip:** teacher + student accounts (incognito) to test create + join.
 
 Do **not** commit `.env.local` or secrets.
 
@@ -96,35 +98,35 @@ Do **not** commit `.env.local` or secrets.
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Local development server |
+| `npm run dev` | Local server at http://localhost:5173 |
 | `npm run build` | Typecheck + production build |
-| `npm run preview` | Preview the production build |
+| `npm run preview` | Preview production build |
 | `npm run lint` | oxlint |
 
 ---
 
-## Project layout (useful paths)
+## Project layout
 
 | Path | Purpose |
 | --- | --- |
-| `src/pages/` | Screens (landing, auth, welcome, dashboard, classroom, …) |
-| `src/services/` | Firebase Auth / Firestore / Storage / email-verify helpers |
+| `src/pages/` | Screens (landing, auth, welcome, dashboard, …) |
+| `src/services/` | Auth, classrooms, email verification |
 | `src/contexts/AuthContext.tsx` | Signed-in user + profile |
-| `workers/email-verification/` | Cloudflare Worker: request / verify / consume signup codes |
-| `firebase/firestore.rules` | Who can read/write classrooms, users, usernames |
-| `firebase/storage.rules` | Who can upload avatars |
-| `.github/workflows/deploy-pages.yml` | Production deploy to GitHub Pages |
-| `ROADMAP.md` | Full product guide + phased build plan |
+| `workers/email-verification/` | Cloudflare Worker for signup codes |
+| `firebase/firestore.rules` | Users, usernames, classrooms |
+| `firebase/storage.rules` | Avatars (when Storage is enabled later) |
+| `OUTLINE.md` | Condensed README + roadmap |
+| `ROADMAP.md` | Full phased product plan |
+| `.github/workflows/deploy-pages.yml` | GitHub Pages deploy |
 
 ---
 
-## Roadmap
+## Docs map
 
-See **[ROADMAP.md](./ROADMAP.md)** for:
+| File | Use when you want… |
+| --- | --- |
+| [OUTLINE.md](./OUTLINE.md) | A one-page overview |
+| [README.md](./README.md) | Setup + how the app works today |
+| [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
-- What the product is (and isn’t)  
-- Locked product decisions  
-- What’s shipped vs what’s next  
-- Contributor checklist and “done means…” criteria for each phase  
-
-**Next major build:** Phase 2 — live committee room (speakers list, motions, timers, chair controls).
+**Next major build:** Phase 2 — live committee room.

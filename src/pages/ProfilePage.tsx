@@ -105,7 +105,7 @@ export function ProfilePage() {
             maxLength={120}
             value={school}
             onChange={(e) => setSchool(e.target.value)}
-            placeholder="Lincoln High MUN"
+            placeholder="ex: Lincoln High MUN"
           />
         </label>
 

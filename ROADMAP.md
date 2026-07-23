@@ -6,7 +6,8 @@
 Live site: [https://coolmd12.github.io](https://coolmd12.github.io)  
 Repo / Pages source: this project (built with Vite → `dist/`, deployed via GitHub Actions).
 
-For local setup commands, see [README.md](./README.md) and the in-app `/setup` page.
+For local setup, see [README.md](./README.md). For a one-page overview, see [OUTLINE.md](./OUTLINE.md).
+The in-app `/setup` page also has a checklist.
 
 ---
 
@@ -64,14 +65,14 @@ Example: a signed-in user should not see “Sign up” as the main home CTA; a t
 Visitor → Sign up
        → Email → verification code (Resend via Cloudflare Worker)
        → GoMUN password + unique username + display name + role
-       → Welcome (school / photo optional — or Skip)
+       → Welcome (school optional — or Skip; avatars = initials for now)
        → Dashboard
             ├─ Teacher: create classroom → get invite code → share
             └─ Student (or teacher joining another room): enter invite code
        → Classroom page (members, optional Meet/Zoom links)
        → Practice hub (placeholders for live / AI / hybrid)
        → Conferences page (curated list of external conference sites)
-       → Profile page (edit display name / photo anytime; username locked)
+       → Profile page (edit display name / school; username locked; initials avatar)
 ```
 
 **Privacy model:** classrooms are private. You only get in with an invite code (or by creating the room). Firestore security rules enforce membership — don’t “fix” privacy only in the UI.
@@ -86,19 +87,22 @@ Visitor → Sign up
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
-| Frontend | React + TypeScript + Vite | `src/` |
+| Frontend | React + TypeScript + Vite | `src/`; dev port **5173** (`strictPort`) |
 | Routing | React Router | `src/App.tsx` |
-| Auth | Firebase Auth (email/password) | `src/services/auth.ts`, `src/contexts/AuthContext.tsx` |
-| Database | Cloud Firestore | `src/services/*`, `firebase/firestore.rules` |
-| Files | Firebase Storage | Profile photos → `firebase/storage.rules` |
-| Hosting | GitHub Pages | Workflow builds `dist/` and deploys |
-| Config | `.env.local` from `.env.example` | `VITE_FIREBASE_*` keys; never commit secrets |
+| Auth | Firebase Auth (email/password) | After email **code** verify via Worker |
+| Database | Cloud Firestore | `users`, `usernames`, `classrooms`, … |
+| Email codes | Resend + Cloudflare Worker | `workers/email-verification/` |
+| Files | Firebase Storage | **Paused** — needs Blaze; initials avatars |
+| Hosting | GitHub Pages | Workflow builds `dist/` |
+| Config | `.env.local` | `VITE_FIREBASE_*` + `VITE_EMAIL_VERIFY_URL`; never commit secrets |
 
 **Important ops files**
 
-- `firebase/firestore.rules` — who can read/write users, classrooms, members
-- `firebase/storage.rules` — who can upload avatars
+- `firebase/firestore.rules` — users, usernames, classrooms, members
+- `firebase/storage.rules` — avatars (when Storage is enabled later)
+- `workers/email-verification/` — signup OTP Worker
 - `.github/workflows/deploy-pages.yml` — production deploy
+- `OUTLINE.md` — condensed overview
 - `ROADMAP.md` (this file) — product direction
 - `README.md` — quick start
 
@@ -114,8 +118,9 @@ These are intentional. If you change one, update this table and explain why in t
 | Cost | Free for students & teachers — no paid tiers for **core** practice | Accessibility for school clubs |
 | CTAs | Prefer **Sign up** / **Log in** | Avoid “Join free” (sounds freemium) |
 | Privacy | Invite-code classrooms | Teachers need closed groups |
-| Profiles | Unique **username** + **display name** required at signup; photo/school optional with Skip | Discord-style identity; don’t force photo |
-| Account security | Email **verification code** (Resend + Cloudflare Worker) before create; one GoMUN password | Prove inbox ownership without Firebase Blaze |
+| Profiles | Unique **username** + **display name** at signup; school optional; **photos paused** (initials) | Discord-style ID; stay on Spark without Storage/Blaze |
+| Account security | Email **verification code** (Resend + Cloudflare Worker) before create; one GoMUN password | Prove inbox ownership without Firebase Blaze for mail |
+| Billing | Stay on Firebase **Spark** for Auth/Firestore; no Blaze until photos/AI need it | Founder’s choice — avoid unexpected charges while building |
 | Experience | UI adapts to auth state + role | Same site, different jobs for teacher vs student |
 | AI | Live people **or** solo AI (Gemini); hybrid later | Practice even without a full committee |
 | Video V1 | Meet / Zoom URL fields | Free, familiar, no SDK billing |
@@ -129,15 +134,15 @@ These are intentional. If you change one, update this table and explain why in t
 
 | Area | Status |
 | --- | --- |
-| Landing, auth, classrooms, invite codes | **Done** (Phase 1) |
-| Conference directory (curated) | **Done** (basic); auto-refresh / filters later |
-| Profile photo + display name | **Mostly done** (Phase 1.5) |
+| Landing, classrooms, invite codes | **Done** (Phase 1) |
+| Conference directory (curated) | **Done** (basic) |
+| Profile customize + welcome step | **Done** (Phase 1.5; photos paused → initials) |
 | Role-aware UX everywhere | **Started** (Phase 1.6) |
-| Email verification code + Discord-style username | **Phase 1.7** (in progress) |
+| Email code signup + Discord-style username | **Done** (Phase 1.7 — harden ops: rules live, Resend domain for public launch) |
 | Parent / guardian accounts | **Later** — documented only |
-| Live committee floor (speakers, motions, timers) | **Not built** — Phase 2 (next big feature) |
+| Live committee floor | **Not built** — Phase 2 (next big feature) |
 | AI arena (Gemini) | **Not built** — Phase 3 |
-| Conference auto-refresh & rich filters | **Not built** — Phase 4 |
+| Conference filters / auto-refresh | **Not built** — Phase 4 |
 | Tutorials, inbox, admin tooling | **Not built** — Phase 5 |
 
 ---
@@ -174,29 +179,29 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 ---
 
-### Phase 1.5 — Profile customization (in progress)
+### Phase 1.5 — Profile customization ✅ mostly done
 
 **Goal:** Each user can control how they appear across the app — including right after signup.
 
 **Done**
 
 - [x] `/profile` settings page (display name, school / club)
-- [x] Profile photo upload (Firebase Storage) + initials fallback
-- [x] Header avatar / name links to profile
-- [x] Avatars begin showing on classroom member lists
-- [x] **Post-signup customize step** (`/welcome`): after creating an account, show a customization box
-  - **Required at signup:** email (+ verification code), GoMUN password, username, display name, role (student / teacher)
-  - **Optional on welcome:** school / club, profile photo
-  - **Skip for now** is allowed; user can edit later from Profile
-  - New accounts are gated to `/welcome` until they save or skip (`profileSetupComplete`)
+- [x] Header avatar / name links to profile (initials fallback)
+- [x] Avatars / names on classroom member lists (initials when no photo)
+- [x] **Post-signup customize step** (`/welcome`)
+  - **Required at signup:** email (+ code), password, username, display name, role
+  - **Optional on welcome:** school / club
+  - **Skip for now** allowed
+  - Gated until save/skip (`profileSetupComplete`)
+- [x] Profile **photos paused** on purpose (Firebase Storage requires Blaze) — initials only
 
 **Still to do**
 
-- [ ] Optional **bio**, **pronouns**, **grade level** (keep fields optional; don’t clutter signup)
-- [ ] Propagate avatars / names consistently into future chat and speakers list
-- [ ] Confirm Storage is enabled in Firebase Console and `firebase/storage.rules` are deployed (required for photo upload in production)
+- [ ] Optional **bio**, **pronouns**, **grade level**
+- [ ] Propagate names into future chat / speakers list
+- [ ] Re-enable photo upload when Blaze + Storage are acceptable; publish `firebase/storage.rules`
 
-**Done means:** a brand-new user always sees the customize step after signup; they can skip; email/role/username stay mandatory and locked after account creation; display name/photo can be changed later.
+**Done means:** new users hit welcome after signup; can skip; username locked; display name editable; no forced photo.
 
 ---
 
@@ -228,25 +233,26 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 ---
 
-### Phase 1.7 — Secure signup (email code + Discord-style profile)
+### Phase 1.7 — Secure signup (email code + Discord-style profile) ✅ shipped
 
 **Goal:** Prove the user owns their email with a typed code, then collect Discord-style identity before the account exists in Firebase Auth.
 
-**Build**
+**Shipped**
 
 - [x] Multi-step signup: email → 6-digit code → password + username + display name + role
-- [x] Cloudflare Worker + Resend for codes (`workers/email-verification/`); secrets never in `VITE_*`
+- [x] Cloudflare Worker + Resend (`workers/email-verification/`); secrets never in `VITE_*`
 - [x] Unique `usernames/{username}` claims; username **locked** after signup
-- [x] Welcome step reduced to optional photo / school (Skip OK)
-- [x] Legacy accounts missing `username` gated to choose one once
-- [ ] Parent / guardian role — **not in this phase** (see Open ideas / Phase 5+)
+- [x] Welcome = optional school only (Skip OK); polished signup/login layouts
+- [x] Legacy accounts missing `username` gated to `/choose-username`
+- [ ] Parent / guardian role — **not in this phase**
+- [ ] Ops harden for public launch: publish latest Firestore rules everywhere; verify Resend sending domain (not only `onboarding@resend.dev`)
 
 **Constraints**
 
-- Stay off Firebase Blaze for now; Worker + Resend replaces Cloud Functions for mail
-- One GoMUN password only (never collect the user’s email-provider password)
+- Stay off Firebase Blaze for mail and for photos (for now)
+- One GoMUN password only
 
-**Done means:** a new user cannot finish signup without a valid email code and a unique username; Resend API key is not in the public frontend bundle.
+**Done means:** cannot finish signup without a valid email code + unique username; Resend key not in the public bundle.
 
 ---
 
@@ -335,29 +341,28 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 If you’re picking up work cold, do this order:
 
-1. **Finish Phase 1.5** (Storage deployed + any remaining profile fields you want)
-2. **Finish Phase 1.6** (dashboard / classroom role UX — small but high leverage)
-3. **Finish / harden Phase 1.7** (Worker deployed, Resend domain verified, rules live)
-4. **Phase 2** (live committee — the core product differentiator)
-5. **Phase 3** (AI) in parallel only if Phase 2 session model is stable
-6. **Phase 4** then **Phase 5** as polish / growth
+1. **Harden Phase 1.7 ops** (Firestore rules published; Worker live; Resend domain when inviting others)
+2. **Finish Phase 1.6** (dashboard / classroom role UX)
+3. **Phase 2** (live committee — core differentiator)
+4. **Phase 3** (AI) once session model is stable
+5. **Phase 4** then **Phase 5**
+6. Revisit **photos** only when Blaze is OK
 
 ---
 
 ## 9. How to work on this repo (contributor checklist)
 
-1. Read this roadmap + [README.md](./README.md)
-2. `npm install` → copy `.env.example` → `.env.local` with Firebase web config + `VITE_EMAIL_VERIFY_URL`
-3. Enable Auth (Email/Password), Firestore, and Storage in Firebase Console
-4. Deploy / paste rules from `firebase/firestore.rules` and `firebase/storage.rules`
-5. Deploy `workers/email-verification` (Resend + KV); never put `RESEND_API_KEY` in frontend env
-6. `npm run dev` → open `http://localhost:5173`
-7. Create a **teacher** and a **student** account to test both paths (including email code)
-8. Pick a **unchecked** item from the current phase; implement; mark it `[x]` here
-9. Run `npm run build` before opening a PR
-10. Don’t commit `.env.local` or secrets
+1. Read [OUTLINE.md](./OUTLINE.md) or this roadmap + [README.md](./README.md)
+2. `npm install` → `.env.example` → `.env.local` (Firebase + `VITE_EMAIL_VERIFY_URL`)
+3. Enable Auth + Firestore; publish `firebase/firestore.rules`
+4. Deploy `workers/email-verification` (never put `RESEND_API_KEY` in frontend env)
+5. `npm run dev` → http://localhost:5173
+6. Test teacher + student paths (full signup including email code → Create account)
+7. Pick an unchecked item; implement; mark `[x]` here
+8. `npm run build` before a PR
+9. Don’t commit `.env.local` or secrets
 
-**Production:** push to the branch that triggers `.github/workflows/deploy-pages.yml`. Ensure GitHub Actions secrets include all `VITE_FIREBASE_*` values **and** `VITE_EMAIL_VERIFY_URL` used at build time.
+**Production:** GitHub Actions secrets need all `VITE_FIREBASE_*` **and** `VITE_EMAIL_VERIFY_URL`.
 
 ---
 
