@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { InviteCodeShare } from '../components/InviteCodeShare';
 import { useAuth } from '../contexts/AuthContext';
 import { getClassroom, listClassroomMembers } from '../services/classrooms';
 import type { Classroom, ClassroomMember } from '../types';
@@ -66,22 +67,37 @@ export function ClassroomPage() {
           <h1>{classroom.name}</h1>
           <p className="muted">{classroom.description || 'No description yet.'}</p>
         </div>
-        <div className="invite-box">
-          <span>Invite code</span>
-          <strong>{classroom.inviteCode}</strong>
-        </div>
+        {isTeacher ? (
+          <InviteCodeShare code={classroom.inviteCode} classroomName={classroom.name} />
+        ) : (
+          <div className="invite-box">
+            <span>Invite code</span>
+            <strong>{classroom.inviteCode}</strong>
+          </div>
+        )}
       </header>
 
       <section className="dash-grid">
         <div className="panel">
           <h2>Members</h2>
           <ul className="member-list">
-            {members.map((m) => (
-              <li key={m.uid}>
-                <strong>{m.displayName}</strong>
-                <span>{m.role}</span>
-              </li>
-            ))}
+            {members.map((m) => {
+              const initials = m.displayName
+                .trim()
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((p) => p[0]?.toUpperCase() || '')
+                .join('') || '?';
+              return (
+                <li key={m.uid} className="member-row">
+                  <span className="avatar avatar-sm" aria-hidden="true">
+                    {m.photoURL ? <img src={m.photoURL} alt="" /> : <span>{initials}</span>}
+                  </span>
+                  <strong>{m.displayName}</strong>
+                  <span>{m.role}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
 

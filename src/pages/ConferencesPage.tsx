@@ -23,17 +23,19 @@ export function ConferencesPage() {
 
   return (
     <main className="shell conferences-page">
-      <header className="page-header">
+      <header className="page-header conference-hero">
         <div>
+          <p className="eyebrow">Worldwide · High school &amp; university</p>
           <h1>Conference directory</h1>
-          <p className="muted">
-            A living shortcut list to conferences already posted on the web. We link out to
-            each organizer — GoMUN does not run these events.
+          <p className="conference-lede">
+            A growing, comprehensive guide to MUN conferences around the world. GoMUN does
+            not run these events — we simply help you find them and send you to each
+            organizer&apos;s official site. Everything, everywhere, all in one place.
           </p>
         </div>
       </header>
 
-      <div className="filters">
+      <div className="filters filters-panel">
         <label>
           Search
           <input
@@ -56,16 +58,16 @@ export function ConferencesPage() {
 
       <ul className="conference-list">
         {filtered.map((c) => (
-          <li key={c.id}>
+          <li key={c.id} className="conference-card">
             <div>
               <p className="eyebrow">
                 {c.shortName} · {c.level} · {c.region}
               </p>
               <h2>{c.name}</h2>
-              <p>
+              <p className="conference-meta">
                 {c.location} · {formatDateRange(c.startDate, c.endDate)}
               </p>
-              <p className="muted">Source: {c.source}</p>
+              <p className="muted conference-source">Organizer site: {c.source}</p>
             </div>
             <a
               className="btn btn-secondary"
@@ -73,7 +75,7 @@ export function ConferencesPage() {
               target="_blank"
               rel="noreferrer"
             >
-              Visit site
+              Open site
             </a>
           </li>
         ))}
@@ -81,7 +83,12 @@ export function ConferencesPage() {
 
       {filtered.length === 0 ? (
         <p className="muted">No conferences match that filter.</p>
-      ) : null}
+      ) : (
+        <p className="muted conference-footnote">
+          Listings are curated for accuracy. Automatic refresh from the web is on the
+          roadmap so the directory stays current as new conferences are announced.
+        </p>
+      )}
     </main>
   );
 }

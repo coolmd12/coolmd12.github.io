@@ -10,6 +10,8 @@ import { ClassroomPage } from './pages/ClassroomPage';
 import { ConferencesPage } from './pages/ConferencesPage';
 import { PracticePage } from './pages/PracticePage';
 import { SetupPage } from './pages/SetupPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { WelcomeSetupPage } from './pages/WelcomeSetupPage';
 
 export default function App() {
   return (
@@ -25,7 +27,9 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/setup" element={<SetupPage />} />
             <Route element={<ProtectedRoute />}>
+              <Route path="/welcome" element={<WelcomeSetupPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/classroom/:classroomId" element={<ClassroomPage />} />
             </Route>
           </Routes>

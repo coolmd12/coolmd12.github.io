@@ -22,8 +22,12 @@ export function SetupPage() {
         <li>Enable <strong>Email/Password</strong> under Authentication → Sign-in method.</li>
         <li>Create a Firestore database in production mode, then deploy rules from <code>firebase/firestore.rules</code>.</li>
         <li>
+          Enable <strong>Storage</strong> (default bucket) for profile photos, then deploy rules
+          from <code>firebase/storage.rules</code>.
+        </li>
+        <li>
           Register a Web app and copy config values into <code>.env.local</code> using{' '}
-          <code>.env.example</code>.
+          <code>.env.example</code> (include <code>VITE_FIREBASE_STORAGE_BUCKET</code>).
         </li>
         <li>
           Run <code>npm run dev</code> and create a teacher account, then a classroom invite

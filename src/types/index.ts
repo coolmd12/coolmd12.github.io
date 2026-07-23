@@ -8,8 +8,16 @@ export interface UserProfile {
   displayName: string;
   role: UserRole;
   school?: string;
+  photoURL?: string;
+  /** False for new accounts until they finish or skip the post-signup customize step. Missing = already set up (legacy). */
+  profileSetupComplete?: boolean;
   createdAt: number;
   classroomIds: string[];
+}
+
+/** New signups set this to false; skip/save sets true. Legacy profiles without the field are treated as done. */
+export function needsProfileSetup(profile: UserProfile | null | undefined): boolean {
+  return profile?.profileSetupComplete === false;
 }
 
 export interface Classroom {
@@ -30,6 +38,7 @@ export interface ClassroomMember {
   displayName: string;
   role: UserRole | 'chair';
   joinedAt: number;
+  photoURL?: string;
 }
 
 export interface PracticeSession {

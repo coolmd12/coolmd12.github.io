@@ -1,9 +1,10 @@
 import type { ConferenceListing } from '../types';
 
 /**
- * Curated shortcut list to existing conferences on the web.
- * GoMUN does not host these events — links go to organizers' sites.
- * Sources: Best Delegate, NMUN, mymun, conference homepages.
+ * Curated worldwide directory of existing MUN conferences.
+ * GoMUN does not host these events — each link opens the organizer's site.
+ * Regions today: North America, Asia, Europe, Global.
+ * Automatic web refresh is planned (see ROADMAP Phase 4).
  */
 export const CONFERENCES: ConferenceListing[] = [
   {
