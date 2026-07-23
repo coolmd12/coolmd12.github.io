@@ -45,17 +45,21 @@ export async function createClassroom(input: {
     inviteCode = generateInviteCode();
   }
 
+  const meet = input.meetLink?.trim();
+  const zoom = input.zoomLink?.trim();
+  const description = input.description?.trim();
+
   const classroom: Classroom = {
     id: classroomRef.id,
     name: input.name.trim(),
-    description: input.description?.trim() || undefined,
     teacherId: input.teacher.uid,
     teacherName: input.teacher.displayName,
     inviteCode,
     createdAt: Date.now(),
     memberCount: 1,
-    defaultMeetLink: input.meetLink?.trim() || undefined,
-    defaultZoomLink: input.zoomLink?.trim() || undefined,
+    ...(description ? { description } : {}),
+    ...(meet ? { defaultMeetLink: meet } : {}),
+    ...(zoom ? { defaultZoomLink: zoom } : {}),
   };
 
   const batch = writeBatch(database);
@@ -73,6 +77,7 @@ export async function createClassroom(input: {
     displayName: input.teacher.displayName,
     role: 'teacher',
     joinedAt: Date.now(),
+    ...(input.teacher.photoURL ? { photoURL: input.teacher.photoURL } : {}),
   } satisfies ClassroomMember);
 
   await batch.commit();
@@ -103,6 +108,7 @@ export async function joinClassroomByCode(
       displayName: user.displayName,
       role: user.role,
       joinedAt: Date.now(),
+      ...(user.photoURL ? { photoURL: user.photoURL } : {}),
     } satisfies ClassroomMember);
     batch.update(classroomRef, { memberCount: increment(1) });
     await batch.commit();

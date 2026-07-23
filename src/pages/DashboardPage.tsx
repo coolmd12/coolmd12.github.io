@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { InviteCodeShare } from '../components/InviteCodeShare';
 import { useAuth } from '../contexts/AuthContext';
 import {
   createClassroom,
@@ -14,6 +15,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [createdRoom, setCreatedRoom] = useState<Classroom | null>(null);
 
   const [className, setClassName] = useState('');
   const [description, setDescription] = useState('');
@@ -63,7 +65,8 @@ export function DashboardPage() {
       setDescription('');
       setMeetLink('');
       setZoomLink('');
-      setMessage(`Classroom created. Invite code: ${room.inviteCode}`);
+      setCreatedRoom(room);
+      setMessage(`Classroom “${room.name}” is ready. Share the invite code with your class.`);
       await refreshProfile();
       setClassrooms((prev) => [room, ...prev]);
     } catch (err) {
@@ -110,6 +113,25 @@ export function DashboardPage() {
 
       {error ? <p className="banner error">{error}</p> : null}
       {message ? <p className="banner ok">{message}</p> : null}
+      {createdRoom ? (
+        <div className="panel invite-created">
+          <h2>Share “{createdRoom.name}”</h2>
+          <p className="muted">Students join from the dashboard with this code.</p>
+          <InviteCodeShare code={createdRoom.inviteCode} classroomName={createdRoom.name} />
+          <div className="invite-created-links">
+            <Link className="btn btn-secondary" to={`/classroom/${createdRoom.id}`}>
+              Open classroom
+            </Link>
+            <button
+              type="button"
+              className="btn btn-ghost-dark"
+              onClick={() => setCreatedRoom(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <section className="dash-grid">
         <div className="panel">
@@ -183,6 +205,10 @@ export function DashboardPage() {
 
           <form className="panel" onSubmit={onJoin}>
             <h2>Join with invite code</h2>
+            <p className="muted">
+              Students use this to enter a class. Teachers can also join another
+              teacher&apos;s room (co-advisor / guest chair).
+            </p>
             <label>
               Invite code
               <input

@@ -50,7 +50,12 @@ service cloud.firestore {
     }
 
     match /classrooms/{classroomId} {
-      allow read: if isClassroomMember(classroomId) || isClassroomTeacher(classroomId);
+      allow read: if isClassroomMember(classroomId)
+        || isClassroomTeacher(classroomId)
+        || (signedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && 'classroomIds' in userDoc()
+          && classroomId in userDoc().classroomIds);
       allow create: if signedIn()
         && request.resource.data.teacherId == request.auth.uid
         && userDoc().role == 'teacher'
@@ -64,12 +69,26 @@ service cloud.firestore {
       allow delete: if isClassroomTeacher(classroomId);
 
       match /members/{memberId} {
-        allow read: if isClassroomMember(classroomId) || isClassroomTeacher(classroomId);
+        // Allow reading your own member doc (including "does not exist") so join can check membership.
+        allow read: if signedIn() && (
+          request.auth.uid == memberId
+          || isClassroomMember(classroomId)
+          || isClassroomTeacher(classroomId)
+        );
         allow create: if signedIn()
           && request.auth.uid == memberId
-          && request.resource.data.keys().hasAll(['uid', 'role', 'displayName', 'joinedAt']);
+          && request.resource.data.keys().hasAll(['uid', 'role', 'displayName', 'joinedAt'])
+          && request.resource.data.uid == memberId
+          && request.resource.data.role in ['student', 'teacher', 'chair'];
         allow delete: if isClassroomTeacher(classroomId) || request.auth.uid == memberId;
-        allow update: if isClassroomTeacher(classroomId);
+        allow update: if isClassroomTeacher(classroomId)
+          || (signedIn()
+            && request.auth.uid == memberId
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.joinedAt == resource.data.joinedAt
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['displayName', 'photoURL']));
       }
 
       match /sessions/{sessionId} {

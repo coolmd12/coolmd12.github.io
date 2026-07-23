@@ -23,7 +23,7 @@ export function LoginPage() {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not sign in.');
+      setError(err instanceof Error ? err.message : 'Could not log in.');
     } finally {
       setBusy(false);
     }
@@ -32,7 +32,7 @@ export function LoginPage() {
   return (
     <main className="shell auth-page">
       <form className="auth-panel" onSubmit={onSubmit}>
-        <h1>Sign in</h1>
+        <h1>Log in</h1>
         <p className="muted">Welcome back to GoMUN Delegate Arena.</p>
 
         {!configured ? (
@@ -66,11 +66,11 @@ export function LoginPage() {
         </label>
 
         <button className="btn btn-primary" type="submit" disabled={busy || !configured}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? 'Logging in…' : 'Log in'}
         </button>
 
         <p className="auth-switch">
-          New here? <Link to="/signup">Create a free account</Link>
+          New here? <Link to="/signup">Sign up</Link>
         </p>
       </form>
     </main>
