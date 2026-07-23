@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { assertEmailAvailableForSignup, EMAIL_ALREADY_IN_USE_MESSAGE } from '../services/auth';
 import { isEmailVerifyConfigured, requestEmailCode, verifyEmailCode } from '../services/emailVerification';
 import type { UserRole } from '../types';
 import { needsProfileSetup } from '../types';
@@ -65,13 +66,9 @@ export function SignupPage() {
 
   async function sendCode() {
     setError('');
-    const normalized = email.trim().toLowerCase();
-    if (!normalized) {
-      setError('Enter your email address.');
-      return;
-    }
     setBusy(true);
     try {
+      const normalized = await assertEmailAvailableForSignup(email);
       await requestEmailCode(normalized);
       setEmail(normalized);
       setStep('code');
@@ -93,11 +90,19 @@ export function SignupPage() {
     setError('');
     setBusy(true);
     try {
+      // Re-gate before leaving the code step — never enter details with a taken email.
+      await assertEmailAvailableForSignup(email);
       const result = await verifyEmailCode(email, code);
       setSignupToken(result.signupToken);
       setStep('details');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not verify code.');
+      const msg = err instanceof Error ? err.message : 'Could not verify code.';
+      if (msg === EMAIL_ALREADY_IN_USE_MESSAGE) {
+        setSignupToken('');
+        setCode('');
+        setStep('email');
+      }
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -133,6 +138,8 @@ export function SignupPage() {
 
     setBusy(true);
     try {
+      // Re-gate before Auth create so Create account never runs for a taken email.
+      await assertEmailAvailableForSignup(email);
       await register({
         email,
         password,
@@ -144,9 +151,15 @@ export function SignupPage() {
       navigate('/welcome', { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not create account.';
-      if (/permission|insufficient/i.test(msg)) {
+      if (msg === EMAIL_ALREADY_IN_USE_MESSAGE || /already exists|already in use/i.test(msg)) {
+        // Should be rare (race). Put the user back on step 1 — that is the only place for this error.
+        setSignupToken('');
+        setCode('');
+        setStep('email');
+        setError(EMAIL_ALREADY_IN_USE_MESSAGE);
+      } else if (/permission|insufficient/i.test(msg)) {
         setError(
-          'Firestore security rules need updating (usernames collection). Deploy firebase/firestore.rules, then try again with a fresh code.',
+          'Firestore security rules need updating (usernames / emails collections). Deploy firebase/firestore.rules, then try again with a fresh code.',
         );
       } else {
         setError(msg);
@@ -191,8 +204,9 @@ export function SignupPage() {
 
           {configured && !emailVerifyReady ? (
             <p className="banner warn">
-              Email verification Worker URL is missing. Set <code>VITE_EMAIL_VERIFY_URL</code> in{' '}
-              <code>.env.local</code>.
+              Email verification is not configured. Locally, set <code>VITE_EMAIL_VERIFY_URL</code> in{' '}
+              <code>.env.local</code> and restart Vite. On the live site, add that same value as a GitHub
+              Actions secret and redeploy.
             </p>
           ) : null}
 

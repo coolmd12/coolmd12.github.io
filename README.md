@@ -18,14 +18,16 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 | Feature | Status |
 | --- | --- |
-| Email/password accounts (**student** / **teacher**) | Done |
+| Email/password accounts | Done |
 | Email verification **code** + Discord-style **username** | Done (Phase 1.7) |
 | Private classrooms + invite codes | Done |
 | Post-signup optional customize (school; Skip OK) | Done |
 | Profile (display name, school; username locked; **initials** avatar) | Done |
 | Conference directory (links to real organizers) | Done (basic) |
 | Polished signup / login layouts | Done |
+| Early “email already registered” check on signup step 1 | Done (`emails/` + Auth lookup) |
 | Role-aware UI (signed out vs student vs teacher) | In progress |
+| **Multi-role accounts** (student **and** teacher) | Planned — see roadmap |
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
 | Parent / guardian accounts | Later |
 | Live committee room (speakers, motions, timers) | Next (Phase 2) |
@@ -39,7 +41,7 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 ## How a user flows through the app
 
-1. **Sign up** — email → **6-digit verification code** → GoMUN password + unique **username** + **display name** + role  
+1. **Sign up** — email (rejects if already registered) → **6-digit verification code** → GoMUN password + unique **username** + **display name** + role  
 2. **Welcome** — optional school/club only (or **Skip**); username + display name already set; avatars use **initials**  
 3. **Dashboard** — teachers create classrooms; students join with an invite code  
 4. **Classroom** — members list, invite sharing, optional Meet/Zoom links  
@@ -47,15 +49,24 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 Signed-in users see Dashboard CTAs instead of Sign up on the home page.
 
+### Roles (today vs next)
+
+| Today | Next (planned) |
+| --- | --- |
+| One account picks **student** *or* **teacher** at signup | One account can be **both** — e.g. join Class A as a delegate and run Class B as advisor |
+| Permissions lean on `users.role` | **Per-classroom** membership role is source of truth; account stores capability flags / `roles[]` |
+
+See [ROADMAP.md](./ROADMAP.md) § multi-role for the migration plan.
+
 ### Account security (Discord-style)
 
 | Field | Required? | Notes |
 | --- | --- | --- |
-| Email | Yes | **6-digit code** before the Auth account is created |
+| Email | Yes | **6-digit code** before the Auth account is created; step 1 blocks emails already in use |
 | GoMUN password | Yes | One site password — never the user’s Gmail/Outlook password |
 | Username | Yes | Unique `@handle`; **locked** after signup |
 | Display name | Yes | Shown in rooms; editable later |
-| Role | Yes | Student / teacher today; parent / guardian later |
+| Role | Yes (for now) | Student / teacher today → multi-role soon; parent / guardian later |
 | School | Optional | Welcome or Profile; Skip OK |
 | Photo | Paused | Initials only until Firebase Storage (Blaze) is acceptable |
 
