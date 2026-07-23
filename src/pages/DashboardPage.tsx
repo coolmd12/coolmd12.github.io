@@ -166,7 +166,7 @@ export function DashboardPage() {
                   maxLength={80}
                   value={className}
                   onChange={(e) => setClassName(e.target.value)}
-                  placeholder="Period 3 MUN"
+                  placeholder="ex: Period 3 MUN"
                 />
               </label>
               <label>
@@ -175,7 +175,7 @@ export function DashboardPage() {
                   maxLength={300}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Spring conference prep"
+                  placeholder="ex: Spring conference prep"
                   rows={3}
                 />
               </label>
@@ -185,7 +185,7 @@ export function DashboardPage() {
                   type="url"
                   value={meetLink}
                   onChange={(e) => setMeetLink(e.target.value)}
-                  placeholder="https://meet.google.com/..."
+                  placeholder="ex: https://meet.google.com/abc-defg-hij"
                 />
               </label>
               <label>
@@ -194,7 +194,7 @@ export function DashboardPage() {
                   type="url"
                   value={zoomLink}
                   onChange={(e) => setZoomLink(e.target.value)}
-                  placeholder="https://zoom.us/j/..."
+                  placeholder="ex: https://zoom.us/j/1234567890"
                 />
               </label>
               <button className="btn btn-primary" type="submit" disabled={busy}>
@@ -215,7 +215,7 @@ export function DashboardPage() {
                 required
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                placeholder="ABC1234"
+                placeholder="ex: ABC1234"
                 maxLength={12}
               />
             </label>

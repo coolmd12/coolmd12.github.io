@@ -19,6 +19,10 @@ export const isFirebaseConfigured = Boolean(
     firebaseConfig.appId,
 );
 
+export const isStorageConfigured = Boolean(
+  isFirebaseConfigured && firebaseConfig.storageBucket,
+);
+
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;

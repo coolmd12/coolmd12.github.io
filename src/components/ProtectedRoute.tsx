@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { needsProfileSetup } from '../types';
+import { needsProfileSetup, needsUsername } from '../types';
 
 export function ProtectedRoute() {
   const { user, profile, loading, configured } = useAuth();
@@ -30,7 +30,15 @@ export function ProtectedRoute() {
     );
   }
 
-  if (needsProfileSetup(profile) && location.pathname !== '/welcome') {
+  if (needsUsername(profile) && location.pathname !== '/choose-username') {
+    return <Navigate to="/choose-username" replace />;
+  }
+
+  if (
+    !needsUsername(profile) &&
+    needsProfileSetup(profile) &&
+    location.pathname !== '/welcome'
+  ) {
     return <Navigate to="/welcome" replace />;
   }
 

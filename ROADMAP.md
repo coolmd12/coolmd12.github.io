@@ -6,7 +6,8 @@
 Live site: [https://coolmd12.github.io](https://coolmd12.github.io)  
 Repo / Pages source: this project (built with Vite → `dist/`, deployed via GitHub Actions).
 
-For local setup commands, see [README.md](./README.md) and the in-app `/setup` page.
+For local setup, see [README.md](./README.md). For a one-page overview, see [OUTLINE.md](./OUTLINE.md).
+The in-app `/setup` page also has a checklist.
 
 ---
 
@@ -45,7 +46,9 @@ Right now there are two account roles (chosen at signup; stored in Firestore):
 | **Teacher / advisor** | Creates a classroom, shares an invite code, chairs / moderates practice |
 | **Student / delegate** | Joins with a code, participates in practice sessions |
 
-Later we may add labels like **chair** or **observer** inside a session — those are session roles, not necessarily new account types.
+**Later:** **Parent / guardian** — monitor linked students (roadmap only; not built yet).
+
+Later we may also add labels like **chair** or **observer** inside a session — those are session roles, not necessarily new account types.
 
 The UI should feel different depending on:
 
@@ -59,15 +62,17 @@ Example: a signed-in user should not see “Sign up” as the main home CTA; a t
 ## 3. How the product works today (mental model)
 
 ```
-Visitor → Sign up (email + password + role required)
-       → Welcome customize box (display name / school / photo optional — or Skip)
+Visitor → Sign up
+       → Email → verification code (Resend via Cloudflare Worker)
+       → GoMUN password + unique username + display name + role
+       → Welcome (school optional — or Skip; avatars = initials for now)
        → Dashboard
             ├─ Teacher: create classroom → get invite code → share
             └─ Student (or teacher joining another room): enter invite code
        → Classroom page (members, optional Meet/Zoom links)
        → Practice hub (placeholders for live / AI / hybrid)
        → Conferences page (curated list of external conference sites)
-       → Profile page (edit customization anytime)
+       → Profile page (edit display name / school; username locked; initials avatar)
 ```
 
 **Privacy model:** classrooms are private. You only get in with an invite code (or by creating the room). Firestore security rules enforce membership — don’t “fix” privacy only in the UI.
@@ -82,19 +87,22 @@ Visitor → Sign up (email + password + role required)
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
-| Frontend | React + TypeScript + Vite | `src/` |
+| Frontend | React + TypeScript + Vite | `src/`; dev port **5173** (`strictPort`) |
 | Routing | React Router | `src/App.tsx` |
-| Auth | Firebase Auth (email/password) | `src/services/auth.ts`, `src/contexts/AuthContext.tsx` |
-| Database | Cloud Firestore | `src/services/*`, `firebase/firestore.rules` |
-| Files | Firebase Storage | Profile photos → `firebase/storage.rules` |
-| Hosting | GitHub Pages | Workflow builds `dist/` and deploys |
-| Config | `.env.local` from `.env.example` | `VITE_FIREBASE_*` keys; never commit secrets |
+| Auth | Firebase Auth (email/password) | After email **code** verify via Worker |
+| Database | Cloud Firestore | `users`, `usernames`, `classrooms`, … |
+| Email codes | Resend + Cloudflare Worker | `workers/email-verification/` |
+| Files | Firebase Storage | **Paused** — needs Blaze; initials avatars |
+| Hosting | GitHub Pages | Workflow builds `dist/` |
+| Config | `.env.local` | `VITE_FIREBASE_*` + `VITE_EMAIL_VERIFY_URL`; never commit secrets |
 
 **Important ops files**
 
-- `firebase/firestore.rules` — who can read/write users, classrooms, members
-- `firebase/storage.rules` — who can upload avatars
+- `firebase/firestore.rules` — users, usernames, classrooms, members
+- `firebase/storage.rules` — avatars (when Storage is enabled later)
+- `workers/email-verification/` — signup OTP Worker
 - `.github/workflows/deploy-pages.yml` — production deploy
+- `OUTLINE.md` — condensed overview
 - `ROADMAP.md` (this file) — product direction
 - `README.md` — quick start
 
@@ -110,12 +118,14 @@ These are intentional. If you change one, update this table and explain why in t
 | Cost | Free for students & teachers — no paid tiers for **core** practice | Accessibility for school clubs |
 | CTAs | Prefer **Sign up** / **Log in** | Avoid “Join free” (sounds freemium) |
 | Privacy | Invite-code classrooms | Teachers need closed groups |
-| Profiles | Display name, school, photo, more later; **post-signup customize step** with Skip | Identity in rooms; don’t force photo |
+| Profiles | Unique **username** + **display name** at signup; school optional; **photos paused** (initials) | Discord-style ID; stay on Spark without Storage/Blaze |
+| Account security | Email **verification code** (Resend + Cloudflare Worker) before create; one GoMUN password | Prove inbox ownership without Firebase Blaze for mail |
+| Billing | Stay on Firebase **Spark** for Auth/Firestore; no Blaze until photos/AI need it | Founder’s choice — avoid unexpected charges while building |
 | Experience | UI adapts to auth state + role | Same site, different jobs for teacher vs student |
 | AI | Live people **or** solo AI (Gemini); hybrid later | Practice even without a full committee |
 | Video V1 | Meet / Zoom URL fields | Free, familiar, no SDK billing |
 | Conferences | Curated outbound links only | We’re a guide, not a host |
-| Backend | Firebase Spark + GitHub Pages | Stay free / cheap while building |
+| Backend | Firebase Spark + GitHub Pages + Worker for email codes | Stay free / cheap while building |
 | Ops later | In-app admin tools | Don’t rely on Firebase Console forever |
 
 ---
@@ -124,13 +134,15 @@ These are intentional. If you change one, update this table and explain why in t
 
 | Area | Status |
 | --- | --- |
-| Landing, auth, classrooms, invite codes | **Done** (Phase 1) |
-| Conference directory (curated) | **Done** (basic); auto-refresh / filters later |
-| Profile photo + display name | **Mostly done** (Phase 1.5) |
+| Landing, classrooms, invite codes | **Done** (Phase 1) |
+| Conference directory (curated) | **Done** (basic) |
+| Profile customize + welcome step | **Done** (Phase 1.5; photos paused → initials) |
 | Role-aware UX everywhere | **Started** (Phase 1.6) |
-| Live committee floor (speakers, motions, timers) | **Not built** — Phase 2 (next big feature) |
+| Email code signup + Discord-style username | **Done** (Phase 1.7 — harden ops: rules live, Resend domain for public launch) |
+| Parent / guardian accounts | **Later** — documented only |
+| Live committee floor | **Not built** — Phase 2 (next big feature) |
 | AI arena (Gemini) | **Not built** — Phase 3 |
-| Conference auto-refresh & rich filters | **Not built** — Phase 4 |
+| Conference filters / auto-refresh | **Not built** — Phase 4 |
 | Tutorials, inbox, admin tooling | **Not built** — Phase 5 |
 
 ---
@@ -167,29 +179,29 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 ---
 
-### Phase 1.5 — Profile customization (in progress)
+### Phase 1.5 — Profile customization ✅ mostly done
 
 **Goal:** Each user can control how they appear across the app — including right after signup.
 
 **Done**
 
 - [x] `/profile` settings page (display name, school / club)
-- [x] Profile photo upload (Firebase Storage) + initials fallback
-- [x] Header avatar / name links to profile
-- [x] Avatars begin showing on classroom member lists
-- [x] **Post-signup customize step** (`/welcome`): after creating an account, show a customization box
-  - **Required at signup:** email, password, role (student / teacher)
-  - **Optional on welcome:** display name, school / club, profile photo
-  - **Skip for now** is allowed; user can edit later from Profile
-  - New accounts are gated to `/welcome` until they save or skip (`profileSetupComplete`)
+- [x] Header avatar / name links to profile (initials fallback)
+- [x] Avatars / names on classroom member lists (initials when no photo)
+- [x] **Post-signup customize step** (`/welcome`)
+  - **Required at signup:** email (+ code), password, username, display name, role
+  - **Optional on welcome:** school / club
+  - **Skip for now** allowed
+  - Gated until save/skip (`profileSetupComplete`)
+- [x] Profile **photos paused** on purpose (Firebase Storage requires Blaze) — initials only
 
 **Still to do**
 
-- [ ] Optional **bio**, **pronouns**, **grade level** (keep fields optional; don’t clutter signup)
-- [ ] Propagate avatars / names consistently into future chat and speakers list
-- [ ] Confirm Storage is enabled in Firebase Console and `firebase/storage.rules` are deployed (required for photo upload in production)
+- [ ] Optional **bio**, **pronouns**, **grade level**
+- [ ] Propagate names into future chat / speakers list
+- [ ] Re-enable photo upload when Blaze + Storage are acceptable; publish `firebase/storage.rules`
 
-**Done means:** a brand-new user always sees the customize step after signup; they can skip; email/role stay mandatory and locked after account creation; name/photo can be changed later.
+**Done means:** new users hit welcome after signup; can skip; username locked; display name editable; no forced photo.
 
 ---
 
@@ -218,6 +230,29 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 - [ ] Optional later: session labels (**chair**, **observer**) with their own UI
 
 **Done means:** a stranger can tell, from the UI alone, whether they’re a guest, a student, or a teacher — without reading docs.
+
+---
+
+### Phase 1.7 — Secure signup (email code + Discord-style profile) ✅ shipped
+
+**Goal:** Prove the user owns their email with a typed code, then collect Discord-style identity before the account exists in Firebase Auth.
+
+**Shipped**
+
+- [x] Multi-step signup: email → 6-digit code → password + username + display name + role
+- [x] Cloudflare Worker + Resend (`workers/email-verification/`); secrets never in `VITE_*`
+- [x] Unique `usernames/{username}` claims; username **locked** after signup
+- [x] Welcome = optional school only (Skip OK); polished signup/login layouts
+- [x] Legacy accounts missing `username` gated to `/choose-username`
+- [ ] Parent / guardian role — **not in this phase**
+- [ ] Ops harden for public launch: publish latest Firestore rules everywhere; verify Resend sending domain (not only `onboarding@resend.dev`)
+
+**Constraints**
+
+- Stay off Firebase Blaze for mail and for photos (for now)
+- One GoMUN password only
+
+**Done means:** cannot finish signup without a valid email code + unique username; Resend key not in the public bundle.
 
 ---
 
@@ -306,27 +341,28 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 If you’re picking up work cold, do this order:
 
-1. **Finish Phase 1.5** (Storage deployed + any remaining profile fields you want)
-2. **Finish Phase 1.6** (dashboard / classroom role UX — small but high leverage)
-3. **Phase 2** (live committee — the core product differentiator)
-4. **Phase 3** (AI) in parallel only if Phase 2 session model is stable
-5. **Phase 4** then **Phase 5** as polish / growth
+1. **Harden Phase 1.7 ops** (Firestore rules published; Worker live; Resend domain when inviting others)
+2. **Finish Phase 1.6** (dashboard / classroom role UX)
+3. **Phase 2** (live committee — core differentiator)
+4. **Phase 3** (AI) once session model is stable
+5. **Phase 4** then **Phase 5**
+6. Revisit **photos** only when Blaze is OK
 
 ---
 
 ## 9. How to work on this repo (contributor checklist)
 
-1. Read this roadmap + [README.md](./README.md)
-2. `npm install` → copy `.env.example` → `.env.local` with Firebase web config
-3. Enable Auth (Email/Password), Firestore, and Storage in Firebase Console
-4. Deploy / paste rules from `firebase/firestore.rules` and `firebase/storage.rules`
-5. `npm run dev` → open `http://localhost:5173`
-6. Create a **teacher** and a **student** account to test both paths
-7. Pick a **unchecked** item from the current phase; implement; mark it `[x]` here
-8. Run `npm run build` before opening a PR
+1. Read [OUTLINE.md](./OUTLINE.md) or this roadmap + [README.md](./README.md)
+2. `npm install` → `.env.example` → `.env.local` (Firebase + `VITE_EMAIL_VERIFY_URL`)
+3. Enable Auth + Firestore; publish `firebase/firestore.rules`
+4. Deploy `workers/email-verification` (never put `RESEND_API_KEY` in frontend env)
+5. `npm run dev` → http://localhost:5173
+6. Test teacher + student paths (full signup including email code → Create account)
+7. Pick an unchecked item; implement; mark `[x]` here
+8. `npm run build` before a PR
 9. Don’t commit `.env.local` or secrets
 
-**Production:** push to the branch that triggers `.github/workflows/deploy-pages.yml`. Ensure GitHub Actions secrets include all `VITE_FIREBASE_*` values used at build time.
+**Production:** GitHub Actions secrets need all `VITE_FIREBASE_*` **and** `VITE_EMAIL_VERIFY_URL`.
 
 ---
 
@@ -336,6 +372,8 @@ If you’re picking up work cold, do this order:
 | --- | --- |
 | **MUN** | Model United Nations |
 | **Delegate** | Student representing a country / position |
+| **Username** | Unique Discord-style `@handle` (locked after signup) |
+| **Display name** | Friendly name shown in rooms (editable) |
 | **Classroom** | Private practice group with an invite code |
 | **Session** | A single practice meeting inside a classroom (Phase 2) |
 | **Chair** | Person running procedure (usually teacher; may be designated later) |
@@ -356,9 +394,11 @@ Revisit embedded WebRTC or official embeds only if teachers explicitly ask for i
 
 These are parked so they don’t distract from Phases 2–3:
 
+- **Parent / guardian** account role — monitor a student’s classrooms / progress without full delegate powers (document for later; not built in Phase 1.7)
 - Deeper in-app email / messaging product
 - Larger YouTube curriculum beyond a simple embed
-- Extra roles (observer, dias staff) with dedicated UI
+- Extra session roles (observer, dias staff) with dedicated UI
 - Richer profile customization (badges, club affiliations)
+- Log in with username instead of email
 
 If you promote an idea into a real phase, add acceptance criteria — don’t leave it as a one-line wish.
