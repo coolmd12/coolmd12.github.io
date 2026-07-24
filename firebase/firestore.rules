@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isClassroomMember(classroomId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/classrooms/$(classroomId)/members/$(request.auth.uid));
+    }
+
+    function isClassroomTeacher(classroomId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/classrooms/$(classroomId)).data.teacherId
+          == request.auth.uid;
+    }
+
+    function validUsername(value) {
+      return value is string
+        && value.size() >= 3
+        && value.size() <= 32
+        && value.matches('^[a-z0-9]([a-z0-9._]*[a-z0-9])?$');
+    }
+
+    match /users/{userId} {
+      allow read: if isSelf(userId)
+        || (signedIn() && resource.data.keys().hasAll(['displayName', 'role']));
+      allow create: if isSelf(userId)
+        && request.resource.data.keys().hasAll([
+          'uid', 'email', 'username', 'displayName', 'role', 'createdAt'
+        ])
+        && request.resource.data.uid == userId
+        && request.resource.data.role in ['student', 'teacher']
+        && request.resource.data.email == request.auth.token.email.lower()
+        && validUsername(request.resource.data.username);
+      allow update: if isSelf(userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role in ['student', 'teacher']
+        && (
+          // Username immutable once set; legacy users may set it once.
+          (
+            !('username' in resource.data)
+            && validUsername(request.resource.data.username)
+          )
+          || (
+            'username' in resource.data
+            && request.resource.data.username == resource.data.username
+          )
+        );
+      allow delete: if false;
+    }
+
+    match /usernames/{username} {
+      // Public read so signup can check availability before Auth account exists.
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && validUsername(username);
+      allow update, delete: if false;
+    }
+
+    match /emails/{email} {
+      // Public get so signup step 1 can detect an existing account early.
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && email == request.auth.token.email.lower();
+      allow update, delete: if false;
+    }
+
+    match /inviteCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.teacherId == request.auth.uid
+        && request.resource.data.keys().hasAll(['classroomId', 'teacherId', 'createdAt']);
+      allow delete: if signedIn() && resource.data.teacherId == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /classrooms/{classroomId} {
+      allow read: if isClassroomMember(classroomId)
+        || isClassroomTeacher(classroomId)
+        || (signedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && 'classroomIds' in userDoc()
+          && classroomId in userDoc().classroomIds);
+      allow create: if signedIn()
+        && request.resource.data.teacherId == request.auth.uid
+        && userDoc().role == 'teacher'
+        && request.resource.data.keys().hasAll([
+          'name', 'teacherId', 'inviteCode', 'createdAt', 'memberCount'
+        ]);
+      allow update: if isClassroomTeacher(classroomId)
+        || (signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount'])
+          && request.resource.data.memberCount == resource.data.memberCount + 1);
+      allow delete: if isClassroomTeacher(classroomId);
+
+      match /members/{memberId} {
+        // Allow reading your own member doc (including "does not exist") so join can check membership.
+        allow read: if signedIn() && (
+          request.auth.uid == memberId
+          || isClassroomMember(classroomId)
+          || isClassroomTeacher(classroomId)
+        );
+        allow create: if signedIn()
+          && request.auth.uid == memberId
+          && request.resource.data.keys().hasAll(['uid', 'role', 'displayName', 'joinedAt'])
+          && request.resource.data.uid == memberId
+          && request.resource.data.role in ['student', 'teacher', 'chair'];
+        allow delete: if isClassroomTeacher(classroomId) || request.auth.uid == memberId;
+        allow update: if isClassroomTeacher(classroomId)
+          || (signedIn()
+            && request.auth.uid == memberId
+            && request.resource.data.uid == resource.data.uid
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.joinedAt == resource.data.joinedAt
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['displayName', 'photoURL']));
+      }
+
+      match /sessions/{sessionId} {
+        allow read: if isClassroomMember(classroomId);
+        allow create, update, delete: if isClassroomTeacher(classroomId);
+      }
+    }
+  }
+}
