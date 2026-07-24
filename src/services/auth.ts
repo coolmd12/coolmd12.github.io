@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -12,6 +13,7 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -42,11 +44,100 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export const EMAIL_ALREADY_IN_USE_MESSAGE =
+  'An account with this email already exists. Log in instead, or use a different email.';
+
+async function authSaysEmailRegistered(email: string): Promise<boolean> {
+  const { auth: a } = requireAuthDb();
+  const methods = await fetchSignInMethodsForEmail(a, email);
+  if (methods.length > 0) return true;
+
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY as string | undefined;
+  if (!apiKey?.trim()) {
+    throw new Error('Firebase is not configured. Add your keys to .env.local (see .env.example).');
+  }
+
+  const continueUri =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'https://coolmd12.github.io';
+
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: email, continueUri }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error('Could not verify whether this email is available. Try again.');
+  }
+
+  const data = (await res.json()) as { registered?: boolean };
+  return Boolean(data.registered);
+}
+
+/** Keep emails/{email} in sync so signup step 1 can block taken addresses. */
+export async function ensureEmailClaim(uid: string, rawEmail: string): Promise<void> {
+  const { db: database } = requireAuthDb();
+  const email = rawEmail.trim().toLowerCase();
+  if (!uid || !email) return;
+
+  const emailRef = doc(database, 'emails', email);
+  const existing = await getDoc(emailRef);
+  if (existing.exists()) return;
+
+  try {
+    await setDoc(emailRef, { uid, createdAt: Date.now() });
+  } catch (err) {
+    console.warn('Could not write emails claim', err);
+  }
+}
+
+/**
+ * Gate for signup step 1 (and re-checks before later steps advance).
+ * Taken emails must never proceed to code / details / Create account.
+ */
+export async function assertEmailAvailableForSignup(rawEmail: string): Promise<string> {
+  const { db: database } = requireAuthDb();
+  const email = rawEmail.trim().toLowerCase();
+  if (!email) {
+    throw new Error('Enter your email address.');
+  }
+
+  const emailClaim = await getDoc(doc(database, 'emails', email));
+  if (emailClaim.exists()) {
+    throw new Error(EMAIL_ALREADY_IN_USE_MESSAGE);
+  }
+
+  let registered: boolean;
+  try {
+    registered = await authSaysEmailRegistered(email);
+  } catch (err) {
+    if (err instanceof Error && err.message === EMAIL_ALREADY_IN_USE_MESSAGE) {
+      throw err;
+    }
+    throw new Error(
+      err instanceof Error
+        ? err.message
+        : 'Could not verify whether this email is available. Try again.',
+    );
+  }
+
+  if (registered) {
+    throw new Error(EMAIL_ALREADY_IN_USE_MESSAGE);
+  }
+
+  return email;
+}
+
 function authErrorMessage(err: unknown): string {
   const code =
     err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
   if (code === 'auth/email-already-in-use') {
-    return 'An account with this email already exists. Log in instead, or use a different email.';
+    return EMAIL_ALREADY_IN_USE_MESSAGE;
   }
   if (code === 'auth/weak-password') {
     return 'Password is too weak. Use at least 6 characters.';
@@ -69,7 +160,8 @@ export async function registerUser(input: {
   signupToken: string;
 }): Promise<UserProfile> {
   const { auth: a, db: database } = requireAuthDb();
-  const email = input.email.trim().toLowerCase();
+  // Final gate before Auth create — step 1 already checked; this catches races only.
+  const email = await assertEmailAvailableForSignup(input.email);
   const signupToken = input.signupToken.trim();
 
   const usernameCheck = validateUsername(input.username);
@@ -85,6 +177,7 @@ export async function registerUser(input: {
   await checkSignupToken(email, signupToken);
 
   const usernameRef = doc(database, 'usernames', usernameCheck.username);
+  const emailRef = doc(database, 'emails', email);
   const existingName = await getDoc(usernameRef);
   if (existingName.exists()) {
     throw new Error('That username is already taken.');
@@ -116,7 +209,15 @@ export async function registerUser(input: {
       if (taken.exists()) {
         throw new Error('That username is already taken.');
       }
+      const emailTaken = await tx.get(emailRef);
+      if (emailTaken.exists()) {
+        throw new Error(EMAIL_ALREADY_IN_USE_MESSAGE);
+      }
       tx.set(usernameRef, {
+        uid: cred.user.uid,
+        createdAt: Date.now(),
+      });
+      tx.set(emailRef, {
         uid: cred.user.uid,
         createdAt: Date.now(),
       });
@@ -190,7 +291,10 @@ export async function claimUsername(rawUsername: string): Promise<UserProfile> {
 
 export async function loginUser(email: string, password: string) {
   const { auth: a } = requireAuthDb();
-  return signInWithEmailAndPassword(a, email, password);
+  const cred = await signInWithEmailAndPassword(a, email, password);
+  const normalized = (cred.user.email || email).trim().toLowerCase();
+  await ensureEmailClaim(cred.user.uid, normalized);
+  return cred;
 }
 
 export async function logoutUser() {
@@ -210,7 +314,10 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
   // first. Retry briefly so we don't create a default student that races signup.
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const existing = await fetchUserProfile(user.uid);
-    if (existing) return existing;
+    if (existing) {
+      if (user.email) await ensureEmailClaim(user.uid, user.email);
+      return existing;
+    }
     await sleep(100 * (attempt + 1));
   }
 
@@ -227,7 +334,7 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
   };
 
   // Create-only: never overwrite a profile signup just finished writing.
-  return runTransaction(database, async (tx) => {
+  const profile = await runTransaction(database, async (tx) => {
     const snap = await tx.get(refDoc);
     if (snap.exists()) return snap.data() as UserProfile;
     tx.set(refDoc, {
@@ -236,6 +343,9 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
     });
     return fallback;
   });
+
+  if (user.email) await ensureEmailClaim(user.uid, user.email);
+  return profile;
 }
 
 export async function addClassroomToUser(uid: string, classroomId: string) {

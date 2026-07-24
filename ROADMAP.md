@@ -39,7 +39,7 @@ MUN clubs need a place to practice that is:
 
 ## 2. Who uses it?
 
-Right now there are two account roles (chosen at signup; stored in Firestore):
+**Today:** two account roles chosen at signup (stored as a single `users.role` in Firestore):
 
 | Role | Typical use |
 | --- | --- |
@@ -50,13 +50,35 @@ Right now there are two account roles (chosen at signup; stored in Firestore):
 
 Later we may also add labels like **chair** or **observer** inside a session — those are session roles, not necessarily new account types.
 
+### Multi-role accounts (planned — Phase 1.6+)
+
+Real clubs need people who are **both**: e.g. Dhyanvi joins Period 3 as a student but runs a mentorship room as teacher for younger delegates. One email / one password — not two accounts.
+
+**Product rule**
+
+| Layer | What it means |
+| --- | --- |
+| **Account capabilities** | What this person *may* do site-wide (`roles: ['student', 'teacher']` or flags) |
+| **Classroom membership** | What they *are* in a given room (`classrooms/{id}/members/{uid}.role`) — **source of truth for permissions** |
+| **Session labels** | Chair / observer / etc. inside a live committee (Phase 2+) |
+
+**How we’ll build it**
+
+1. **Data:** add `roles: UserRole[]` on `UserProfile` (keep legacy `role` as `primaryRole` during migration: `roles = [role]`).  
+2. **Signup:** replace exclusive radio with multi-select (“I practice as a delegate” / “I run classrooms”) — default both on, or require at least one.  
+3. **Permissions:** `createClassroom` if `'teacher' in roles`; join-with-code for everyone (membership role = student unless invited as co-advisor).  
+4. **Dashboard:** show **Create classroom** and **Join with code** when the account has both capabilities — not “one or the other” layouts forever.  
+5. **Rules:** Firestore `userDoc().role == 'teacher'` → `userDoc().roles.hasAny(['teacher'])` (with fallback for old docs).  
+6. **Profile:** allow toggling capabilities later (optional) without changing per-room history.
+
+**Not the plan:** forcing a second Auth account, or inferring teach-ability only from “owns a classroom” with no way to opt in at signup.
+
 The UI should feel different depending on:
 
 1. **Signed out** vs **signed in**
-2. **Student** vs **teacher** (and future roles)
+2. **Capabilities** (can teach / can join) and **current classroom context** (member role)
 
-Example: a signed-in user should not see “Sign up” as the main home CTA; a teacher’s empty dashboard should push “Create a classroom,” while a student’s should push “Enter invite code.”
-
+Example: a signed-in user should not see “Sign up” as the main home CTA; someone who can teach should see “Create a classroom,” and someone who only joins should see “Enter invite code” — dual-role users see **both**.
 ---
 
 ## 3. How the product works today (mental model)
@@ -118,10 +140,10 @@ These are intentional. If you change one, update this table and explain why in t
 | Cost | Free for students & teachers — no paid tiers for **core** practice | Accessibility for school clubs |
 | CTAs | Prefer **Sign up** / **Log in** | Avoid “Join free” (sounds freemium) |
 | Privacy | Invite-code classrooms | Teachers need closed groups |
+| Experience | UI adapts to auth state + role **capabilities** (multi-role soon) | Same person may teach one room and join another |
 | Profiles | Unique **username** + **display name** at signup; school optional; **photos paused** (initials) | Discord-style ID; stay on Spark without Storage/Blaze |
-| Account security | Email **verification code** (Resend + Cloudflare Worker) before create; one GoMUN password | Prove inbox ownership without Firebase Blaze for mail |
+| Account security | Email **verification code** before create; **step 1** rejects emails already registered; one GoMUN password | Don’t make users finish signup only to hit “email in use” |
 | Billing | Stay on Firebase **Spark** for Auth/Firestore; no Blaze until photos/AI need it | Founder’s choice — avoid unexpected charges while building |
-| Experience | UI adapts to auth state + role | Same site, different jobs for teacher vs student |
 | AI | Live people **or** solo AI (Gemini); hybrid later | Practice even without a full committee |
 | Video V1 | Meet / Zoom URL fields | Free, familiar, no SDK billing |
 | Conferences | Curated outbound links only | We’re a guide, not a host |
@@ -138,7 +160,8 @@ These are intentional. If you change one, update this table and explain why in t
 | Conference directory (curated) | **Done** (basic) |
 | Profile customize + welcome step | **Done** (Phase 1.5; photos paused → initials) |
 | Role-aware UX everywhere | **Started** (Phase 1.6) |
-| Email code signup + Discord-style username | **Done** (Phase 1.7 — harden ops: rules live, Resend domain for public launch) |
+| Multi-role accounts (student **and** teacher) | **Planned** inside Phase 1.6 |
+| Email code signup + Discord-style username | **Done** (Phase 1.7 — harden ops: rules live incl. `emails/`, Resend domain) |
 | Parent / guardian accounts | **Later** — documented only |
 | Live committee floor | **Not built** — Phase 2 (next big feature) |
 | AI arena (Gemini) | **Not built** — Phase 3 |
@@ -207,7 +230,7 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 ### Phase 1.6 — Role-aware & auth-aware experience (in progress)
 
-**Goal:** The site should never feel “generic.” Signed-out visitors see marketing; signed-in students and teachers see tools that match their job.
+**Goal:** The site should never feel “generic.” Signed-out visitors see marketing; signed-in people see tools that match what they can do — including **both** teaching and joining when they hold both roles.
 
 **Done**
 
@@ -217,20 +240,24 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 
 **Still to do**
 
+- [ ] **Multi-role accounts** (see §2)
+  - [ ] `roles: UserRole[]` on profile (+ migrate legacy `role`)
+  - [ ] Signup: multi-select student and/or teacher (not exclusive radio)
+  - [ ] Dashboard: Create **and** Join panels when capabilities allow both
+  - [ ] Firestore rules: create classroom if `'teacher' in roles` (legacy fallback)
 - [ ] **Dashboard layouts**
-  - Teacher empty state: “Create your first classroom”
-  - Student empty state: “Ask your teacher for an invite code”
-  - Don’t bury the primary action under the wrong panel
+  - Teacher-capable empty state: “Create your first classroom”
+  - Join-focused empty state: “Ask your teacher for an invite code”
+  - Dual-role: both primary actions visible
 - [ ] **Practice & Conferences pages**
-  - Clear next steps by role (create/open room vs join/enter)
+  - Clear next steps by capability / classroom context
 - [ ] **Classroom page**
-  - Teacher: manage links, share invite, (later) chair controls
-  - Student: participate-focused view; hide or demote teacher-only actions
-- [ ] **Nav / empty states** aligned with role everywhere
+  - Owner / membership role drives controls (not global exclusive account type)
+  - Student-in-this-room view hides teacher-only actions
+- [ ] **Nav / empty states** aligned with capabilities everywhere
 - [ ] Optional later: session labels (**chair**, **observer**) with their own UI
 
-**Done means:** a stranger can tell, from the UI alone, whether they’re a guest, a student, or a teacher — without reading docs.
-
+**Done means:** a stranger can tell what they can do from the UI; a mentor-delegate with one account can run one room and sit in another.
 ---
 
 ### Phase 1.7 — Secure signup (email code + Discord-style profile) ✅ shipped
@@ -244,10 +271,10 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 - [x] Unique `usernames/{username}` claims; username **locked** after signup
 - [x] Welcome = optional school only (Skip OK); polished signup/login layouts
 - [x] Legacy accounts missing `username` gated to `/choose-username`
+- [x] Signup step 1 rejects emails already registered (`emails/{email}` claim + Auth lookup). Code/details steps re-check before advancing so Create account is never attempted for a taken email. Login backfills `emails/` for older accounts.
 - [ ] Parent / guardian role — **not in this phase**
-- [ ] Ops harden for public launch: publish latest Firestore rules everywhere; verify Resend sending domain (not only `onboarding@resend.dev`)
-
-**Constraints**
+- [ ] Ops harden for public launch: verify Resend sending domain (not only `onboarding@resend.dev`)
+- [ ] Optional: if Firebase **Email enumeration protection** hides Auth lookups, ensure legacy users log in once (writes `emails/`) or backfill claims**Constraints**
 
 - Stay off Firebase Blaze for mail and for photos (for now)
 - One GoMUN password only
@@ -342,7 +369,7 @@ When you finish a checklist item, mark it `[x]` in this file in the same PR.
 If you’re picking up work cold, do this order:
 
 1. **Harden Phase 1.7 ops** (Firestore rules published; Worker live; Resend domain when inviting others)
-2. **Finish Phase 1.6** (dashboard / classroom role UX)
+2. **Finish Phase 1.6** (role-aware UX + **multi-role** student-and-teacher accounts)
 3. **Phase 2** (live committee — core differentiator)
 4. **Phase 3** (AI) once session model is stable
 5. **Phase 4** then **Phase 5**

@@ -71,6 +71,17 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /emails/{email} {
+      // Public get so signup step 1 can detect an existing account early.
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && email == request.auth.token.email.lower();
+      allow update, delete: if false;
+    }
+
     match /inviteCodes/{code} {
       allow get: if signedIn();
       allow list: if false;
