@@ -13,7 +13,7 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { generateInviteCode } from '../lib/utils';
 import { addClassroomToUser } from './auth';
-import type { Classroom, ClassroomMember, UserProfile } from '../types';
+import { canTeach, type Classroom, type ClassroomMember, type UserProfile } from '../types';
 
 function requireDb() {
   if (!isFirebaseConfigured || !db) {
@@ -32,7 +32,7 @@ export async function createClassroom(input: {
   zoomLink?: string;
 }): Promise<Classroom> {
   const database = requireDb();
-  if (input.teacher.role !== 'teacher') {
+  if (!canTeach(input.teacher)) {
     throw new Error('Only teachers can create classrooms.');
   }
 
@@ -103,10 +103,12 @@ export async function joinClassroomByCode(
 
   if (!memberSnap.exists()) {
     const batch = writeBatch(database);
+    // Joining another room = delegate seat. Account teacher capability does not
+    // make you the room owner (owner remains classroom.teacherId).
     batch.set(memberRef, {
       uid: user.uid,
       displayName: user.displayName,
-      role: user.role,
+      role: 'student',
       joinedAt: Date.now(),
       ...(user.photoURL ? { photoURL: user.photoURL } : {}),
     } satisfies ClassroomMember);

@@ -26,12 +26,13 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Conference directory (links to real organizers) | Done (basic) |
 | Polished signup / login layouts | Done |
 | Early “email already registered” check on signup step 1 | Done (`emails/` + Auth lookup) |
-| Role-aware UI (signed out vs student vs teacher) | In progress |
-| **Multi-role accounts** (student **and** teacher) | Planned — see roadmap |
+| Role-aware UI (signed out vs student vs teacher) | Done (Phase 1.6) |
+| **Multi-role accounts** (student **and** teacher) | Done (Phase 1.6 — `roles[]`) |
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
 | Parent / guardian accounts | Later |
 | Live committee room (speakers, motions, timers) | Next (Phase 2) |
 | AI practice with Gemini (solo / hybrid) | Later (Phase 3) |
+| **Speech & Debate** practice (same site, parallel to MUN) | Far future — parked idea only |
 
 **GoMUN does not host conferences.** The conference page is a guide to other organizers’ events.
 
@@ -41,22 +42,23 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 ## How a user flows through the app
 
-1. **Sign up** — email (rejects if already registered) → **6-digit verification code** → GoMUN password + unique **username** + **display name** + role  
+1. **Sign up** — email (rejects if already registered) → **6-digit verification code** → GoMUN password + unique **username** + **display name** + capabilities (student and/or teacher)  
 2. **Welcome** — optional school/club only (or **Skip**); username + display name already set; avatars use **initials**  
-3. **Dashboard** — teachers create classrooms; students join with an invite code  
-4. **Classroom** — members list, invite sharing, optional Meet/Zoom links  
+3. **Dashboard** — teachers create classrooms; anyone can join with an invite code; dual-role users see both  
+4. **Classroom** — members list, invite sharing (owner), optional Meet/Zoom links  
 5. **Practice / Conferences / Profile** — explore modes, find real MUNs, edit profile anytime  
 
 Signed-in users see Dashboard CTAs instead of Sign up on the home page.
 
-### Roles (today vs next)
+### Roles & capabilities
 
-| Today | Next (planned) |
+| Layer | Meaning |
 | --- | --- |
-| One account picks **student** *or* **teacher** at signup | One account can be **both** — e.g. join Class A as a delegate and run Class B as advisor |
-| Permissions lean on `users.role` | **Per-classroom** membership role is source of truth; account stores capability flags / `roles[]` |
+| Account `roles[]` | Site-wide capabilities (student, teacher, or both) |
+| Classroom membership | What you are **in that room** (joiners default to student; owner is `teacherId`) |
+| Session labels | Chair / observer later (Phase 2) |
 
-See [ROADMAP.md](./ROADMAP.md) § multi-role for the migration plan.
+See [ROADMAP.md](./ROADMAP.md) § multi-role.
 
 ### Account security (Discord-style)
 
@@ -66,7 +68,7 @@ See [ROADMAP.md](./ROADMAP.md) § multi-role for the migration plan.
 | GoMUN password | Yes | One site password — never the user’s Gmail/Outlook password |
 | Username | Yes | Unique `@handle`; **locked** after signup |
 | Display name | Yes | Shown in rooms; editable later |
-| Role | Yes (for now) | Student / teacher today → multi-role soon; parent / guardian later |
+| Capabilities | Yes | Student and/or teacher at signup; parent / guardian later |
 | School | Optional | Welcome or Profile; Skip OK |
 | Photo | Paused | Initials only until Firebase Storage (Blaze) is acceptable |
 
@@ -141,3 +143,5 @@ Do **not** commit `.env.local` or secrets.
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
 **Next major build:** Phase 2 — live committee room.
+
+**Far future (not scheduled):** Speech & Debate practice on the same site — same free / classroom-private spirit as MUN. See [ROADMAP.md](./ROADMAP.md) open ideas.

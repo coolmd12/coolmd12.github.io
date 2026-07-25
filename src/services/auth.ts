@@ -20,7 +20,12 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase';
 import { validateDisplayName, validateUsername } from '../lib/username';
 import { checkSignupToken, consumeSignupToken } from './emailVerification';
-import type { UserProfile, UserRole } from '../types';
+import {
+  normalizeAccountRoles,
+  profileRoles,
+  type UserProfile,
+  type UserRole,
+} from '../types';
 
 function requireAuthDb() {
   if (!isFirebaseConfigured || !auth || !db) {
@@ -96,6 +101,22 @@ export async function ensureEmailClaim(uid: string, rawEmail: string): Promise<v
   }
 }
 
+/** Backfill roles[] from legacy single role so capability helpers and rules stay in sync. */
+export async function ensureRolesClaim(profile: UserProfile): Promise<UserProfile> {
+  if (profile.roles?.length) return profile;
+  const roles = profileRoles(profile);
+  if (!roles.length) return profile;
+
+  const { db: database } = requireAuthDb();
+  try {
+    await updateDoc(doc(database, 'users', profile.uid), { roles });
+    return { ...profile, roles };
+  } catch (err) {
+    console.warn('Could not backfill roles claim', err);
+    return { ...profile, roles };
+  }
+}
+
 /**
  * Gate for signup step 1 (and re-checks before later steps advance).
  * Taken emails must never proceed to code / details / Create account.
@@ -156,7 +177,9 @@ export async function registerUser(input: {
   password: string;
   username: string;
   displayName: string;
-  role: UserRole;
+  /** Preferred: multi-select capabilities. Falls back to single `role`. */
+  roles?: UserRole[];
+  role?: UserRole;
   signupToken: string;
 }): Promise<UserProfile> {
   const { auth: a, db: database } = requireAuthDb();
@@ -168,6 +191,13 @@ export async function registerUser(input: {
   if (!usernameCheck.ok) throw new Error(usernameCheck.error);
   const displayCheck = validateDisplayName(input.displayName);
   if (!displayCheck.ok) throw new Error(displayCheck.error);
+
+  const selected = input.roles?.length
+    ? input.roles
+    : input.role
+      ? [input.role]
+      : [];
+  const { role, roles } = normalizeAccountRoles(selected);
 
   if (!signupToken) {
     throw new Error('Verify your email before creating an account.');
@@ -196,7 +226,8 @@ export async function registerUser(input: {
     email,
     username: usernameCheck.username,
     displayName: displayCheck.displayName,
-    role: input.role,
+    role,
+    roles,
     emailVerifiedAt,
     profileSetupComplete: false,
     createdAt: Date.now(),
@@ -294,6 +325,8 @@ export async function loginUser(email: string, password: string) {
   const cred = await signInWithEmailAndPassword(a, email, password);
   const normalized = (cred.user.email || email).trim().toLowerCase();
   await ensureEmailClaim(cred.user.uid, normalized);
+  const existing = await fetchUserProfile(cred.user.uid);
+  if (existing) await ensureRolesClaim(existing);
   return cred;
 }
 
@@ -316,7 +349,7 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
     const existing = await fetchUserProfile(user.uid);
     if (existing) {
       if (user.email) await ensureEmailClaim(user.uid, user.email);
-      return existing;
+      return ensureRolesClaim(existing);
     }
     await sleep(100 * (attempt + 1));
   }
@@ -328,6 +361,7 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
     email: (user.email || '').toLowerCase(),
     displayName: user.displayName || 'Delegate',
     role: 'student',
+    roles: ['student'],
     profileSetupComplete: true,
     createdAt: Date.now(),
     classroomIds: [],

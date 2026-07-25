@@ -31,6 +31,19 @@ service cloud.firestore {
         && value.matches('^[a-z0-9]([a-z0-9._]*[a-z0-9])?$');
     }
 
+    function validRolesList(value) {
+      return value is list
+        && value.size() > 0
+        && value.size() <= 2
+        && value.hasOnly(['student', 'teacher']);
+    }
+
+    // Account can create classrooms if primary role is teacher or roles[] includes teacher.
+    function canTeachAccount() {
+      return userDoc().role == 'teacher'
+        || ('roles' in userDoc() && userDoc().roles.hasAny(['teacher']));
+    }
+
     match /users/{userId} {
       allow read: if isSelf(userId)
         || (signedIn() && resource.data.keys().hasAll(['displayName', 'role']));
@@ -40,6 +53,10 @@ service cloud.firestore {
         ])
         && request.resource.data.uid == userId
         && request.resource.data.role in ['student', 'teacher']
+        && (
+          !('roles' in request.resource.data)
+          || validRolesList(request.resource.data.roles)
+        )
         && request.resource.data.email == request.auth.token.email.lower()
         && validUsername(request.resource.data.username);
       allow update: if isSelf(userId)
@@ -47,10 +64,17 @@ service cloud.firestore {
         && request.resource.data.email == resource.data.email
         && request.resource.data.role in ['student', 'teacher']
         && (
-          // Username immutable once set; legacy users may set it once.
+          !('roles' in request.resource.data)
+          || validRolesList(request.resource.data.roles)
+        )
+        && (
+          // Username immutable once set; legacy users may set it once; roles backfill OK without username.
           (
             !('username' in resource.data)
-            && validUsername(request.resource.data.username)
+            && (
+              !('username' in request.resource.data)
+              || validUsername(request.resource.data.username)
+            )
           )
           || (
             'username' in resource.data
@@ -101,7 +125,7 @@ service cloud.firestore {
           && classroomId in userDoc().classroomIds);
       allow create: if signedIn()
         && request.resource.data.teacherId == request.auth.uid
-        && userDoc().role == 'teacher'
+        && canTeachAccount()
         && request.resource.data.keys().hasAll([
           'name', 'teacherId', 'inviteCode', 'createdAt', 'memberCount'
         ]);

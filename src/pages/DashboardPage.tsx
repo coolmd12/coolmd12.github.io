@@ -7,7 +7,7 @@ import {
   joinClassroomByCode,
   listUserClassrooms,
 } from '../services/classrooms';
-import type { Classroom } from '../types';
+import { canTeach, type Classroom } from '../types';
 
 export function DashboardPage() {
   const { profile, refreshProfile } = useAuth();
@@ -23,6 +23,8 @@ export function DashboardPage() {
   const [zoomLink, setZoomLink] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const teacherCapable = canTeach(profile);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +99,13 @@ export function DashboardPage() {
     }
   }
 
+  function emptyStateCopy() {
+    if (teacherCapable) {
+      return 'No classrooms yet. Create your first classroom, or join another room with an invite code.';
+    }
+    return 'No classrooms yet. Ask your teacher for an invite code to join.';
+  }
+
   return (
     <main className="shell dashboard">
       <header className="page-header">
@@ -138,7 +147,7 @@ export function DashboardPage() {
           <h2>Your classrooms</h2>
           {loading ? <p className="muted">Loading…</p> : null}
           {!loading && classrooms.length === 0 ? (
-            <p className="muted">No classrooms yet. Create one or join with a code.</p>
+            <p className="muted">{emptyStateCopy()}</p>
           ) : null}
           <ul className="classroom-list">
             {classrooms.map((c) => (
@@ -156,7 +165,7 @@ export function DashboardPage() {
         </div>
 
         <div className="panel-stack">
-          {profile?.role === 'teacher' ? (
+          {teacherCapable ? (
             <form className="panel" onSubmit={onCreate}>
               <h2>Create classroom</h2>
               <label>
@@ -206,8 +215,9 @@ export function DashboardPage() {
           <form className="panel" onSubmit={onJoin}>
             <h2>Join with invite code</h2>
             <p className="muted">
-              Students use this to enter a class. Teachers can also join another
-              teacher&apos;s room (co-advisor / guest chair).
+              {teacherCapable
+                ? 'Enter another teacher’s room as a delegate (or guest). Creating a room is above — joining does not make you the owner.'
+                : 'Enter the code your teacher shared. You’ll join as a delegate in that classroom.'}
             </p>
             <label>
               Invite code

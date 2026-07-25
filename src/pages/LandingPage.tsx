@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { canTeach } from '../types';
 
 export function LandingPage() {
   const { user, profile } = useAuth();
   const signedIn = Boolean(user);
+  const teacherCapable = canTeach(profile);
 
   return (
     <main className="landing">
@@ -23,7 +25,7 @@ export function LandingPage() {
           <div className="hero-cta">
             {signedIn ? (
               <Link to="/dashboard" className="btn btn-primary btn-lg">
-                {profile?.role === 'teacher' ? 'Open dashboard' : 'Go to my classrooms'}
+                {teacherCapable ? 'Open dashboard' : 'Go to my classrooms'}
               </Link>
             ) : (
               <Link to="/signup" className="btn btn-primary btn-lg">
@@ -174,13 +176,11 @@ export function LandingPage() {
             <>
               <div>
                 <h2>
-                  {profile?.role === 'teacher'
-                    ? 'Ready for your next committee?'
-                    : 'Ready to practice?'}
+                  {teacherCapable ? 'Ready for your next committee?' : 'Ready to practice?'}
                 </h2>
                 <p>
-                  {profile?.role === 'teacher'
-                    ? 'Open your dashboard to create a classroom, share an invite code, or jump back into an existing room.'
+                  {teacherCapable
+                    ? 'Open your dashboard to create a classroom, share an invite code, or join another room as a delegate.'
                     : 'Open your dashboard to join with an invite code or enter a classroom you’re already in.'}
                 </p>
               </div>
@@ -193,8 +193,8 @@ export function LandingPage() {
               <div>
                 <h2>Start with a secure account</h2>
                 <p>
-                  Create a teacher or student account, open a private classroom, and start
-                  practicing. Core practice stays $0 — no paid tiers planned.
+                  Create an account as a student, teacher, or both — then open a private
+                  classroom and start practicing. Core practice stays $0 — no paid tiers planned.
                 </p>
               </div>
               <Link to="/signup" className="btn btn-primary btn-lg">

@@ -804,6 +804,11 @@ textarea:focus {
   margin-bottom: 0.15rem;
 }
 
+.role-fieldset-hint {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 .role-option {
   display: flex;
   align-items: center;
@@ -857,6 +862,10 @@ textarea:focus {
   max-width: 40rem;
   font-size: 1.05rem;
   color: var(--muted);
+}
+
+.conference-next {
+  margin: 1rem 0 0;
 }
 
 .filters {

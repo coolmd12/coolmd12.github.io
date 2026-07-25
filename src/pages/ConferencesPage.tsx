@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { CONFERENCES } from '../data/conferences';
 import { formatDateRange } from '../lib/utils';
+import { canTeach } from '../types';
 
 export function ConferencesPage() {
+  const { user, profile } = useAuth();
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('All');
+  const teacherCapable = canTeach(profile);
 
   const regions = useMemo(
     () => ['All', ...Array.from(new Set(CONFERENCES.map((c) => c.region))).sort()],
@@ -32,6 +37,21 @@ export function ConferencesPage() {
             not run these events — we simply help you find them and send you to each
             organizer&apos;s official site. Everything, everywhere, all in one place.
           </p>
+          {user ? (
+            <p className="conference-next">
+              <Link className="btn btn-secondary" to="/dashboard">
+                {teacherCapable
+                  ? 'Back to classrooms — create or open a room'
+                  : 'Back to classrooms — join or open a room'}
+              </Link>
+            </p>
+          ) : (
+            <p className="conference-next">
+              <Link className="btn btn-secondary" to="/signup">
+                Sign up to practice in a private classroom
+              </Link>
+            </p>
+          )}
         </div>
       </header>
 

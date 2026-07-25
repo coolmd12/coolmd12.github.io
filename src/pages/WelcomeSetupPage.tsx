@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { finishProfileSetup } from '../services/auth';
-import { needsProfileSetup, needsUsername } from '../types';
+import { formatCapabilities, needsProfileSetup, needsUsername } from '../types';
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -115,10 +115,8 @@ export function WelcomeSetupPage() {
             <strong>{current.displayName}</strong>
           </div>
           <div>
-            <span className="meta-label">Role</span>
-            <strong>
-              {current.role === 'teacher' ? 'Teacher / advisor' : 'Student / delegate'}
-            </strong>
+            <span className="meta-label">Capabilities</span>
+            <strong>{formatCapabilities(current) || 'Student / delegate'}</strong>
           </div>
         </div>
 
