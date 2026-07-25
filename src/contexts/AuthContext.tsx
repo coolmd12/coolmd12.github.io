@@ -29,7 +29,7 @@ interface AuthContextValue {
     password: string;
     username: string;
     displayName: string;
-    role: UserRole;
+    roles: UserRole[];
     signupToken: string;
   }) => Promise<void>;
   claimUsername: (username: string) => Promise<void>;
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
       username: string;
       displayName: string;
-      role: UserRole;
+      roles: UserRole[];
       signupToken: string;
     }) => {
       const p = await registerUser(input);

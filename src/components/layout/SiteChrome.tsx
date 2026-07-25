@@ -1,8 +1,10 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatCapabilities } from '../../types';
 
 export function SiteHeader() {
   const { user, profile, logout, configured } = useAuth();
+  const caps = formatCapabilities(profile);
 
   return (
     <header className="site-header">
@@ -58,7 +60,7 @@ export function SiteHeader() {
                 <span>
                   {profile?.displayName || 'Delegate'}
                   {profile?.username ? ` · @${profile.username}` : ''}
-                  {profile?.role ? ` · ${profile.role}` : ''}
+                  {caps ? ` · ${caps}` : ''}
                 </span>
               </Link>
               <button type="button" className="btn btn-ghost" onClick={() => void logout()}>

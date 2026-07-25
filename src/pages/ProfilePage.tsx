@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile } from '../services/auth';
+import { formatCapabilities } from '../types';
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -115,8 +116,8 @@ export function ProfilePage() {
         </label>
 
         <label>
-          Role
-          <input value={current.role} disabled readOnly />
+          Capabilities
+          <input value={formatCapabilities(current) || current.role} disabled readOnly />
         </label>
 
         <button className="btn btn-primary" type="submit" disabled={busy}>

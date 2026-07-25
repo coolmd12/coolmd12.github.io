@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { canTeach } from '../types';
 
 export function PracticePage() {
   const { user, profile } = useAuth();
+  const teacherCapable = canTeach(profile);
 
   return (
     <main className="shell practice-page">
@@ -25,7 +27,7 @@ export function PracticePage() {
           </p>
           {user ? (
             <Link className="btn btn-primary" to="/dashboard">
-              {profile?.role === 'teacher' ? 'Open or create a classroom' : 'Open a classroom'}
+              {teacherCapable ? 'Open or create a classroom' : 'Open a classroom'}
             </Link>
           ) : (
             <Link className="btn btn-primary" to="/signup">

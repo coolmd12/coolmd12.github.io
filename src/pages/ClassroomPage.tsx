@@ -57,7 +57,7 @@ export function ClassroomPage() {
     );
   }
 
-  const isTeacher = profile?.uid === classroom.teacherId;
+  const isOwner = profile?.uid === classroom.teacherId;
 
   return (
     <main className="shell classroom-page">
@@ -67,12 +67,12 @@ export function ClassroomPage() {
           <h1>{classroom.name}</h1>
           <p className="muted">{classroom.description || 'No description yet.'}</p>
         </div>
-        {isTeacher ? (
+        {isOwner ? (
           <InviteCodeShare code={classroom.inviteCode} classroomName={classroom.name} />
         ) : (
           <div className="invite-box">
-            <span>Invite code</span>
-            <strong>{classroom.inviteCode}</strong>
+            <span>You’re in this room as a delegate</span>
+            <strong>Ask your teacher if you need the invite code</strong>
           </div>
         )}
       </header>
@@ -104,8 +104,9 @@ export function ClassroomPage() {
         <div className="panel">
           <h2>Meeting links</h2>
           <p className="muted">
-            Recommendation for V1: paste Meet or Zoom URLs here. Embedding video SDKs can
-            come later without blocking practice.
+            {isOwner
+              ? 'Paste Meet or Zoom URLs for your class. Embedding video SDKs can come later without blocking practice.'
+              : 'Join the Meet or Zoom link your teacher set — then head to practice when the room is ready.'}
           </p>
           <ul className="link-list">
             <li>
@@ -129,11 +130,11 @@ export function ClassroomPage() {
               )}
             </li>
           </ul>
-          {isTeacher ? (
+          {isOwner ? (
             <p className="muted">Teachers can edit default links from future settings.</p>
           ) : null}
           <Link className="btn btn-secondary" to="/practice">
-            Start practice session
+            {isOwner ? 'Open practice hub' : 'Go to practice'}
           </Link>
         </div>
       </section>

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { assertEmailAvailableForSignup, EMAIL_ALREADY_IN_USE_MESSAGE } from '../services/auth';
 import { isEmailVerifyConfigured, requestEmailCode, verifyEmailCode } from '../services/emailVerification';
 import type { UserRole } from '../types';
-import { needsProfileSetup } from '../types';
+import { needsProfileSetup, normalizeAccountRoles } from '../types';
 import { validateDisplayName, validateUsername } from '../lib/username';
 
 type Step = 'email' | 'code' | 'details';
@@ -25,7 +25,7 @@ const STEP_COPY: Record<Step, { title: string; blurb: string }> = {
   details: {
     title: 'Set up your delegate identity',
     blurb:
-      'Choose a username, display name, password, and role. Tapping Create account is what actually saves you in Firebase.',
+      'Choose a username, display name, password, and what you do here. You can be a student, a teacher, or both. Tapping Create account is what actually saves you in Firebase.',
   },
 };
 
@@ -41,7 +41,7 @@ export function SignupPage() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
+  const [roles, setRoles] = useState<UserRole[]>(['student']);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -130,6 +130,13 @@ export function SignupPage() {
       setError('Passwords do not match.');
       return;
     }
+    let normalized;
+    try {
+      normalized = normalizeAccountRoles(roles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Choose at least one role.');
+      return;
+    }
     if (!signupToken) {
       setError('Verify your email before creating an account.');
       setStep('email');
@@ -145,7 +152,7 @@ export function SignupPage() {
         password,
         username: userCheck.username,
         displayName: nameCheck.displayName,
-        role,
+        roles: normalized.roles,
         signupToken,
       });
       navigate('/welcome', { replace: true });
@@ -351,28 +358,41 @@ export function SignupPage() {
 
               <fieldset className="role-fieldset">
                 <legend>
-                  <span className="req-mark" aria-hidden="true">*</span> I am a…
+                  <span className="req-mark" aria-hidden="true">*</span> I want to…
                 </legend>
+                <p className="muted role-fieldset-hint">Pick one or both — mentors who also debate can select both.</p>
                 <div className="role-grid">
-                  <label className={`role-card ${role === 'student' ? 'selected' : ''}`}>
+                  <label className={`role-card ${roles.includes('student') ? 'selected' : ''}`}>
                     <input
-                      type="radio"
-                      name="role"
-                      checked={role === 'student'}
-                      onChange={() => setRole('student')}
+                      type="checkbox"
+                      name="role-student"
+                      checked={roles.includes('student')}
+                      onChange={() => {
+                        setRoles((prev) =>
+                          prev.includes('student')
+                            ? prev.filter((r) => r !== 'student')
+                            : [...prev, 'student'],
+                        );
+                      }}
                     />
-                    <span className="role-card-title">Student / delegate</span>
-                    <span className="role-card-desc">Join with an invite code</span>
+                    <span className="role-card-title">Practice as a delegate</span>
+                    <span className="role-card-desc">Join classrooms with an invite code</span>
                   </label>
-                  <label className={`role-card ${role === 'teacher' ? 'selected' : ''}`}>
+                  <label className={`role-card ${roles.includes('teacher') ? 'selected' : ''}`}>
                     <input
-                      type="radio"
-                      name="role"
-                      checked={role === 'teacher'}
-                      onChange={() => setRole('teacher')}
+                      type="checkbox"
+                      name="role-teacher"
+                      checked={roles.includes('teacher')}
+                      onChange={() => {
+                        setRoles((prev) =>
+                          prev.includes('teacher')
+                            ? prev.filter((r) => r !== 'teacher')
+                            : [...prev, 'teacher'],
+                        );
+                      }}
                     />
-                    <span className="role-card-title">Teacher / advisor</span>
-                    <span className="role-card-desc">Create classrooms & invites</span>
+                    <span className="role-card-title">Run classrooms</span>
+                    <span className="role-card-desc">Create rooms &amp; share invite codes</span>
                   </label>
                 </div>
               </fieldset>
