@@ -77,6 +77,8 @@ export function ClassroomPage() {
         )}
       </header>
 
+      {error ? <p className="banner error">{error}</p> : null}
+
       <section className="dash-grid">
         <div className="panel">
           <h2>Members</h2>
@@ -101,8 +103,9 @@ export function ClassroomPage() {
           </ul>
         </div>
 
-        <div className="panel">
-          <h2>Meeting links</h2>
+        <div className="panel-stack">
+          <div className="panel">
+            <h2>Meeting links</h2>
           <p className="muted">
             {isOwner
               ? 'Paste Meet or Zoom URLs for your class. Embedding video SDKs can come later without blocking practice.'
@@ -130,12 +133,13 @@ export function ClassroomPage() {
               )}
             </li>
           </ul>
-          {isOwner ? (
-            <p className="muted">Teachers can edit default links from future settings.</p>
-          ) : null}
-          <Link className="btn btn-secondary" to="/practice">
-            {isOwner ? 'Open practice hub' : 'Go to practice'}
-          </Link>
+            {isOwner ? (
+              <p className="muted">Teachers can edit default links from future settings.</p>
+            ) : null}
+            <Link className="btn btn-secondary" to="/practice">
+              {isOwner ? 'Open practice hub' : 'Go to practice'}
+            </Link>
+          </div>
         </div>
       </section>
     </main>

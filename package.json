@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "deploy:pages": "npm run build"
+    "deploy:pages": "npm run build",
+    "test": "vitest run"
   },
   "dependencies": {
     "firebase": "^12.16.0",
@@ -22,8 +23,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "typescript": "^5.3.3",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   },
   "description": "GoMUN Delegate Arena — free Interactive AI Model United Nations platform"
 }

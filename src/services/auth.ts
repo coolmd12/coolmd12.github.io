@@ -188,9 +188,13 @@ export async function registerUser(input: {
   const signupToken = input.signupToken.trim();
 
   const usernameCheck = validateUsername(input.username);
-  if (!usernameCheck.ok) throw new Error(usernameCheck.error);
+  if (usernameCheck.ok === false) {
+    throw new Error(usernameCheck.error);
+  }
   const displayCheck = validateDisplayName(input.displayName);
-  if (!displayCheck.ok) throw new Error(displayCheck.error);
+  if (displayCheck.ok === false) {
+    throw new Error(displayCheck.error);
+  }
 
   const selected = input.roles?.length
     ? input.roles
@@ -295,7 +299,9 @@ export async function claimUsername(rawUsername: string): Promise<UserProfile> {
   if (!user) throw new Error('You must be signed in to choose a username.');
 
   const usernameCheck = validateUsername(rawUsername);
-  if (!usernameCheck.ok) throw new Error(usernameCheck.error);
+  if (usernameCheck.ok === false) {
+    throw new Error(usernameCheck.error);
+  }
 
   const existing = await fetchUserProfile(user.uid);
   if (!existing) throw new Error('Profile not found.');
@@ -432,7 +438,9 @@ export async function updateUserProfile(input: {
   if (!displayName) throw new Error('Display name is required.');
   if (input.displayName !== undefined) {
     const check = validateDisplayName(input.displayName);
-    if (!check.ok) throw new Error(check.error);
+    if (check.ok === false) {
+      throw new Error(check.error);
+    }
     displayName = check.displayName;
   }
 

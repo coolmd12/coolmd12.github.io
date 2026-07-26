@@ -1,10 +1,28 @@
 import { Link, NavLink } from 'react-router-dom';
+import { useState, useEffect, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCapabilities } from '../../types';
 
 export function SiteHeader() {
   const { user, profile, logout, configured } = useAuth();
+  const [showRoomsModal, setShowRoomsModal] = useState(false);
   const caps = formatCapabilities(profile);
+
+  useEffect(() => {
+    if (!showRoomsModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowRoomsModal(false);
+    };
+    // Prevent background scroll while modal is open
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [showRoomsModal]);
 
   return (
     <header className="site-header">
@@ -33,6 +51,17 @@ export function SiteHeader() {
           </NavLink>
           <NavLink to="/conferences">Conferences</NavLink>
           <NavLink to="/practice">Practice</NavLink>
+          <NavLink
+            to="/rooms"
+            onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+              if (!user) {
+                e.preventDefault();
+                setShowRoomsModal(true);
+              }
+            }}
+          >
+            Rooms
+          </NavLink>
           {user ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
         </nav>
 
@@ -79,6 +108,33 @@ export function SiteHeader() {
           )}
         </div>
       </div>
+      {showRoomsModal
+        ? createPortal(
+            <div className="modal-overlay modal-centered" role="dialog" aria-modal="true">
+              <div className="modal-panel" tabIndex={-1} aria-labelledby="rooms-modal-title">
+                <button
+                  type="button"
+                  className="modal-close"
+                  aria-label="Close dialog"
+                  onClick={() => setShowRoomsModal(false)}
+                >
+                  ×
+                </button>
+                <h2 id="rooms-modal-title">Live committee rooms</h2>
+                <p className="muted">Live committee rooms are available to signed-in users. Create a free account to start or sign in to join rooms.</p>
+                <div className="modal-actions">
+                  <Link to="/signup" className="btn btn-primary btn-lg" onClick={() => setShowRoomsModal(false)}>
+                    Sign up
+                  </Link>
+                  <Link to="/login" className="btn btn-secondary btn-lg" onClick={() => setShowRoomsModal(false)}>
+                    Log in
+                  </Link>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </header>
   );
 }

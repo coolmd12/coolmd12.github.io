@@ -110,6 +110,7 @@ textarea {
   backdrop-filter: blur(14px);
   background: rgba(7, 21, 38, 0.86);
   border-bottom: 1px solid rgba(217, 227, 239, 0.12);
+  --header-height: 4.25rem;
 }
 
 .header-inner {
@@ -237,10 +238,130 @@ textarea {
   width: min(520px, 100%);
 }
 
+.committee-room-page .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.committee-room-page .panel-inline {
+  min-width: 16rem;
+  align-self: flex-start;
+}
+
+.committee-room-page .member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.committee-room-page .member-row {
+  display: grid;
+  grid-template-columns: 1.3fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--mist);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.committee-room-page .link-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
 .profile-avatar-row {
   display: flex;
   align-items: center;
   gap: 1.1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 21, 38, 0.36);
+  backdrop-filter: blur(6px) saturate(120%);
+  z-index: 60;
+  padding: 1.25rem; /* inset from viewport edges */
+}
+
+.modal-centered {
+  align-items: center;
+}
+
+.modal-panel {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow);
+  transform-origin: center center;
+  animation: popIn 220ms cubic-bezier(.2,.9,.3,1);
+  position: relative;
+  /* center in viewport — remove top offset so modal sits in the middle */
+  margin-top: 0;
+  z-index: 70;
+}
+
+.modal-panel h2 {
+  margin: 0 0 0.35rem;
+}
+
+.modal-panel .muted {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.modal-actions .btn {
+  min-width: 110px;
+}
+
+.modal-close {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nav-room-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.1rem 0.25rem;
 }
 
 .profile-avatar-actions {
