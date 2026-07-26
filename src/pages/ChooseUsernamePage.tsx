@@ -29,7 +29,7 @@ export function ChooseUsernamePage() {
     e.preventDefault();
     setError('');
     const check = validateUsername(username);
-    if (!check.ok) {
+    if (check.ok === false) {
       setError(check.error);
       return;
     }

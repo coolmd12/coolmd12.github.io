@@ -1,107 +1,19 @@
-# GoMUN Delegate Arena — Outline
-
-> Condensed README + ROADMAP. For setup detail see [README.md](./README.md). For full phases see [ROADMAP.md](./ROADMAP.md).
-
-**Live:** [https://coolmd12.github.io](https://coolmd12.github.io) · **Founder:** Dhyanvi Mehta  
-**Promise:** Free forever for core practice. No freemium upsell.
-
----
-
-## What it is
-
-Classroom-private **Model UN practice** for students and teachers: invite-code rooms, conference *guides* (not hosting), Meet/Zoom link-outs, future live floor + AI practice.
-
-| Is | Is not |
-| --- | --- |
-| Practice arena for clubs | Paid conference host |
-| Private invite-code rooms | Public matchmaking lobby |
-| Links to other organizers’ MUNs | “Our” conference calendar |
-
----
-
-## Who uses it
-
-| Role | Job |
-| --- | --- |
-| **Teacher** | Create classroom, share invite, chair later |
-| **Student** | Join with code, practice |
-| **Both** | Same account can teach one room and join another as a delegate |
-| **Parent / guardian** | Later — not built |
-
-**Direction:** account holds capabilities (`roles[]`); **per-classroom** membership / ownership is the real permission in a room. Details in [ROADMAP.md](./ROADMAP.md).
-
----
-
-## User flow (today)
-
-1. Sign up: email (block if already registered) → **code** → password + **username** + display name + capabilities (student and/or teacher)  
-2. Welcome: optional school (Skip OK) · avatars = **initials**  
-3. Dashboard → classroom → practice / conferences / profile  
-
-Account is created only when the user finishes signup and clicks **Create account** (code alone is not enough).
-
----
-
-## Status snapshot
-
-| Area | Status |
-| --- | --- |
-| Landing, classrooms, invites | Done |
-| Secure signup (email code + username) | Done |
-| Early email-already-exists on step 1 | Done (`emails/` + Auth lookup) |
-| Profile / welcome (school; initials) | Done |
-| Signup / login UI polish | Done |
-| Role-aware UX | Done (Phase 1.6) |
-| Multi-role (student **and** teacher) | Done (`roles[]`) |
-| Profile photos (Storage) | Paused (Blaze) |
-| Live committee room | **Next — Phase 2** |
-| AI (Gemini) | Phase 3 |
-| Conference filters | Phase 4 |
-| Tutorials / inbox / admin | Phase 5 |
-| Speech & Debate (parallel practice mode) | Far future — parked |
-
----
-
-## Locked decisions
-
-- One **GoMUN password** (never Gmail password)  
-- Email **verification code** via Resend + Cloudflare Worker  
-- Discord-style **username** (locked) + **display name** (editable)  
-- Stay on Firebase **Spark** while building; no Blaze until photos/AI need it  
-- Conferences = outbound links only  
-- Video V1 = Meet/Zoom URLs, not embedded SDKs  
-
----
-
-## Stack (one glance)
-
-React + Vite + TypeScript · Firebase Auth + Firestore · Resend + Cloudflare Worker · GitHub Pages  
-Dev: `npm run dev` → **http://localhost:5173** · Env: `.env.local` (`VITE_FIREBASE_*`, `VITE_EMAIL_VERIFY_URL`)
-
-Worker: `workers/email-verification/` · Rules: `firebase/firestore.rules`
-
----
-
-## Build order
-
-1. Harden signup ops (rules published — including `emails/` + `roles` — Worker live, real Resend domain for public users)  
-2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**  
-3. **Phase 2** live committee (speakers, motions, timers)  
-4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
-5. Photos when Blaze is OK  
-
----
-
-## Open ideas (parked)
+# GoMUN Delegate Arena — Outline\n\n> Condensed README + ROADMAP. For setup detail see [README.md](./README.md). For full phases see [ROADMAP.md](./ROADMAP.md).\n\n**Live:** [https://coolmd12.github.io](https://coolmd12.github.io) · **Founder:** Dhyanvi Mehta  \n**Promise:** Free forever for core practice. No freemium upsell.\n\n---\n\n## What it is\n\nClassroom-private **Model UN practice** for students and teachers: invite-code rooms, conference *guides* (not hosting), Meet/Zoom link-outs, future live floor + AI practice.\n\n| Is | Is not |\n| --- | --- |\n| Practice arena for clubs | Paid conference host |\n| Private invite-code rooms | Public matchmaking lobby |\n| Links to other organizers’ MUNs | “Our” conference calendar |\n\n---\n\n## Who uses it\n\n| Role | Job |\n| --- | --- |\n| **Teacher** | Create classroom, share invite, chair later |\n| **Student** | Join with code, practice |\n| **Both** | Same account can teach one room and join another as a delegate |\n| **Parent / guardian** | Later — not built |\n\n**Direction:** account holds capabilities (`roles[]`); **per-classroom** membership / ownership is the real permission in a room. Details in [ROADMAP.md](./ROADMAP.md).\n\n---\n\n## User flow (today)\n\n1. Sign up: email (block if already registered) → **code** → password + **username** + display name + capabilities (student and/or teacher)  \n2. Welcome: optional school (Skip OK) · avatars = **initials**  \n3. Dashboard → classroom → practice / conferences / profile  \n\nAccount is created only when the user finishes signup and clicks **Create account** (code alone is not enough).\n\n---\n\n## Status snapshot\n\n| Area | Status |\n| --- | --- |\n| Landing, classrooms, invites | Done |\n| Secure signup (email code + username) | Done |\n| Early email-already-exists on step 1 | Done (`emails/` + Auth lookup) |\n| Profile / welcome (school; initials) | Done |\n| Signup / login UI polish | Done |\n| Role-aware UX | Done (Phase 1.6) |\n| Multi-role (student **and** teacher) | Done (`roles[]`) |\n| Profile photos (Storage) | Paused (Blaze) |\n| Live committee room | **Next — Phase 2** |\n| AI (Gemini) | Phase 3 |\n| Conference filters | Phase 4 |\n| Tutorials / inbox / admin | Phase 5 |\
+| Speech & Debate (parallel practice mode) | Far future — parked |\n\n---\n\n## Locked decisions\n\n- One **GoMUN password** (never Gmail password)  \n- Email **verification code** via Resend + Cloudflare Worker  \n- Discord-style **username** (locked) + **display name** (editable)  \n- Stay on Firebase **Spark** while building; no Blaze until photos/AI need it  \n- Conferences = outbound links only  \n- Video V1 = Meet/Zoom URLs, not embedded SDKs  \n\n---\n\n## Stack (one glance)\n\nReact + Vite + TypeScript · Firebase Auth + Firestore · Resend + Cloudflare Worker · GitHub Pages  \nDev: `npm run dev` → **http://localhost:5173** · Env: `.env.local` (`VITE_FIREBASE_*`, `VITE_EMAIL_VERIFY_URL`)\n\nWorker: `workers/email-verification/` · Rules: `firebase/firestore.rules`\n\n---\n\n## Build order\n\n1. Harden signup ops (rules published — including `emails/` + `roles` — Worker live, real Resend domain for public users)  \n2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**  \n3. **Phase 2** live committee (speakers, motions, timers)  \n4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  \n5. Photos when Blaze is OK  \n\n---\n\n## Open ideas (parked)
 
 Parent/guardian role · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
 
 ---
 
-## Doc map
+## Future Considerations
 
-| File | Purpose |
-| --- | --- |
-| **OUTLINE.md** | This page — quick combined view |
-| **README.md** | Setup, flow, layout |
-| **ROADMAP.md** | Phases, checklists, decisions |
+- **Online conference practice:** real-time committee rooms for remote sessions and virtual practice rounds.
+- **In-person conference operations:** chair-facing tools for inputting and organizing MUN data from physical conferences.
+- **Smart Research Simulation Tools:**
+  - Interactive Clause Builders: guided forms for generating properly formatted UN draft language.
+  - Country Stance Aggregator: quick-reference dashboards for open-source UN data, voting records, and policy summaries.
+  - Procedural Cheat-Sheet Generators: customizable tools for generating downloadable "Scripts of Motions" based on the club’s preferred rules of procedure.
+
+---
+
+## Doc map\n\n| File | Purpose |\n| --- | --- |\n| **OUTLINE.md** | This page — quick combined view |\n| **README.md** | Setup, flow, layout |\n| **ROADMAP.md** | Phases, checklists, decisions |

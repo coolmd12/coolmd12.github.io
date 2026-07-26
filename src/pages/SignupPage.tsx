@@ -113,12 +113,12 @@ export function SignupPage() {
     setError('');
 
     const userCheck = validateUsername(username);
-    if (!userCheck.ok) {
+    if (userCheck.ok === false) {
       setError(userCheck.error);
       return;
     }
     const nameCheck = validateDisplayName(displayName);
-    if (!nameCheck.ok) {
+    if (nameCheck.ok === false) {
       setError(nameCheck.error);
       return;
     }

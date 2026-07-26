@@ -7,6 +7,8 @@ import {
   joinClassroomByCode,
   listUserClassrooms,
 } from '../services/classrooms';
+import { buildCommitteeRoomDraft } from '../services/committeeRoomLogic';
+import { createRoom } from '../services/rooms';
 import { canTeach, type Classroom } from '../types';
 
 export function DashboardPage() {
@@ -16,12 +18,14 @@ export function DashboardPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [createdRoom, setCreatedRoom] = useState<Classroom | null>(null);
+  const [createdCommitteeRoom, setCreatedCommitteeRoom] = useState<{ id: string; name: string } | null>(null);
 
   const [className, setClassName] = useState('');
   const [description, setDescription] = useState('');
   const [meetLink, setMeetLink] = useState('');
   const [zoomLink, setZoomLink] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  const [roomName, setRoomName] = useState('');
   const [busy, setBusy] = useState(false);
 
   const teacherCapable = canTeach(profile);
@@ -99,6 +103,31 @@ export function DashboardPage() {
     }
   }
 
+  async function onCreateCommitteeRoom(e: FormEvent) {
+    e.preventDefault();
+    if (!profile) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    setCreatedCommitteeRoom(null);
+    try {
+      const room = await createRoom(
+        buildCommitteeRoomDraft({
+          name: roomName,
+          chairId: profile.uid,
+        }),
+      );
+      if (!room) throw new Error('Could not create the committee room.');
+      setRoomName('');
+      setCreatedCommitteeRoom({ id: room.roomId, name: room.name });
+      setMessage(`Committee room “${room.name}” is ready.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create committee room.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function emptyStateCopy() {
     if (teacherCapable) {
       return 'No classrooms yet. Create your first classroom, or join another room with an invite code.';
@@ -135,6 +164,25 @@ export function DashboardPage() {
               type="button"
               className="btn btn-ghost-dark"
               onClick={() => setCreatedRoom(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {createdCommitteeRoom ? (
+        <div className="panel invite-created">
+          <h2>Committee room ready</h2>
+          <p className="muted">Your new room is available to open right away.</p>
+          <div className="invite-created-links">
+            <Link className="btn btn-secondary" to={`/room/${createdCommitteeRoom.id}`}>
+              Open “{createdCommitteeRoom.name}”
+            </Link>
+            <button
+              type="button"
+              className="btn btn-ghost-dark"
+              onClick={() => setCreatedCommitteeRoom(null)}
             >
               Dismiss
             </button>
@@ -208,6 +256,28 @@ export function DashboardPage() {
               </label>
               <button className="btn btn-primary" type="submit" disabled={busy}>
                 Create classroom
+              </button>
+            </form>
+          ) : null}
+
+          {teacherCapable ? (
+            <form className="panel" onSubmit={onCreateCommitteeRoom}>
+              <h2>Create committee room</h2>
+              <p className="muted">
+                Start a simple committee space from the dashboard. This is the first step toward the live room flow.
+              </p>
+              <label>
+                Room name
+                <input
+                  required
+                  maxLength={80}
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="ex: GA Committee"
+                />
+              </label>
+              <button className="btn btn-primary" type="submit" disabled={busy}>
+                Create room
               </button>
             </form>
           ) : null}
