@@ -345,7 +345,7 @@ export function SignupPage() {
               </label>
 
               <label>
-                <span className="req-mark" aria-hidden="true">*</span> Confirm password
+                <span className="req-mark" aria-hidden="true">*</span> Confirm GoMUN password
                 <input
                   type="password"
                   autoComplete="new-password"

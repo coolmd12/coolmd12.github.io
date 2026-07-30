@@ -30,13 +30,17 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | **Multi-role accounts** (student **and** teacher) | Done (Phase 1.6 — `roles[]`) |
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
 | Parent / guardian accounts | Later |
-| Live committee room (speakers, motions, timers) | Next (Phase 2) |
-| AI practice with Gemini (solo / hybrid) | Later (Phase 3) |
+| Live committee room (speakers, motions, timers) | Next (Phase 2) — procedure floor; early scaffolding started |
+| AI practice + prep Q&A assistant (Gemini) | Later (Phase 3) |
+| RoP cheat sheets · resolution / position-paper tools · prep notes | Later (Phase 5) |
+| **In-app calling** (voice / video inside rooms) | Later (Phase 6) — Meet/Zoom links until then |
 | **Speech & Debate** practice (same site, parallel to MUN) | Far future — parked idea only |
 
 **GoMUN does not host conferences.** The conference page is a guide to other organizers’ events.
 
-**Video (V1):** optional Google Meet / Zoom links on classrooms — we link out; we don’t embed video SDKs yet.
+**What a “room” is:** a shared **procedure floor** (speaker queue, placards, timers, motions, voting) — **not** a Zoom/Meet clone. **Open to any signed-in user** (create → share link → join); classrooms are separate. Meet/Zoom beside it for V1 audio/video; **Phase 6** adds in-app calling (important for ad-hoc open rooms).
+
+**Join:** pick **chair** or **delegate** (editable in-room); delegates enter a **country**; chairs enter a **name**. Labels show as `Chair · …` / `Delegate · …`. Raise **placard** → chair recognizes onto the speaker queue. Optional **meeting link** on create. Motions: anyone proposes; chair opens procedural **yes/no** votes (tally chair-only until closed).
 
 ***
 
@@ -145,9 +149,21 @@ GoMUN is expanding into two complementary product lanes:
 A dedicated operations workspace for chairs to track delegate registration, committee assignments, resolutions, amendments, voting records, and awards for physical MUN events.
 
 ### Smart Research Simulation Tools
-- **Interactive Clause Builders:** guided forms for operative verbs, sub-clauses, and funding mechanisms that output properly formatted UN draft language.
+- **Interactive Clause Builders:** guided forms for operative verbs, sub-clauses, and funding mechanisms that output properly formatted UN draft language (**resolution formatting**).
 - **Country Stance Aggregator:** quick-reference dashboards that pull open-source UN data, voting records, and policy summaries for beginner delegates.
-- **Procedural Cheat-Sheet Generators:** customizable tools that let clubs generate downloadable "Scripts of Motions" for their preferred rules of procedure (for example, UNA-USA or THIMUN).
+- **Procedural / Rules-of-Procedure cheat sheets:** customizable tools that let clubs generate downloadable "Scripts of Motions" for their preferred rules (for example, UNA-USA or THIMUN).
+- **Position paper drafting tools:** structured prompts and templates to help delegates outline and draft position papers (user owns the writing; tools guide format and structure).
+
+### Prep notes & documents
+A personal (and optionally classroom-shared) notes space where users can:
+- **Link or attach** prep materials — Google Docs, Slides, PDFs, and similar
+- **Write notes on the spot** for future reference without uploading an existing file
+
+### Built-in AI prep assistant (not an editor)
+An in-app AI (planned with Gemini in Phase 3) that users can ask questions of and get **resources** from — e.g. find helpful websites for research, answer general MUN / procedure / topic questions. **It will not edit the user’s work** (speeches, resolutions, notes); it points people to prep help and explains concepts.
+
+### In-app calling (Phase 6)
+Optional voice (then video) **inside** a live committee room so clubs don’t *have* to open Meet/Zoom. The procedure floor stays primary; calling is an add-on. External Meet/Zoom links remain as a fallback. Cost / media-server choices TBD when we reach Phase 6.
 
 ***
 
@@ -159,7 +175,7 @@ A dedicated operations workspace for chairs to track delegate registration, comm
 | [README.md](./README.md) | Setup + how the app works today |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
-**Next major build:** Phase 2 — live committee room.
+**Next major build:** Phase 2 — live committee **procedure floor** (not in-app video yet).
 
 Note: A future centralized "Rooms" hub (for example `/rooms`) will host live committee rooms and, later, additional room types such as AI practice rooms and hybrid rooms (live + AI). These room types are planned to be free and integrated with classroom and dashboard flows.
 

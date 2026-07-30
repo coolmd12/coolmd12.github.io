@@ -73,7 +73,7 @@ export function LoginPage() {
               />
             </label>
             <label>
-              Password
+              GoMUN password
               <input
                 type="password"
                 autoComplete="current-password"
