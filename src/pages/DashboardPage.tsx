@@ -26,6 +26,7 @@ export function DashboardPage() {
   const [zoomLink, setZoomLink] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [roomName, setRoomName] = useState('');
+  const [meetingLink, setMeetingLink] = useState('');
   const [busy, setBusy] = useState(false);
 
   const teacherCapable = canTeach(profile);
@@ -114,11 +115,13 @@ export function DashboardPage() {
       const room = await createRoom(
         buildCommitteeRoomDraft({
           name: roomName,
-          chairId: profile.uid,
+          createdBy: profile.uid,
+          meetingLink,
         }),
       );
       if (!room) throw new Error('Could not create the committee room.');
       setRoomName('');
+      setMeetingLink('');
       setCreatedCommitteeRoom({ id: room.roomId, name: room.name });
       setMessage(`Committee room “${room.name}” is ready.`);
     } catch (err) {
@@ -174,7 +177,9 @@ export function DashboardPage() {
       {createdCommitteeRoom ? (
         <div className="panel invite-created">
           <h2>Committee room ready</h2>
-          <p className="muted">Your new room is available to open right away.</p>
+          <p className="muted">
+            Open it, pick chair or delegate, then copy the room link to invite others.
+          </p>
           <div className="invite-created-links">
             <Link className="btn btn-secondary" to={`/room/${createdCommitteeRoom.id}`}>
               Open “{createdCommitteeRoom.name}”
@@ -260,27 +265,35 @@ export function DashboardPage() {
             </form>
           ) : null}
 
-          {teacherCapable ? (
-            <form className="panel" onSubmit={onCreateCommitteeRoom}>
-              <h2>Create committee room</h2>
-              <p className="muted">
-                Start a simple committee space from the dashboard. This is the first step toward the live room flow.
-              </p>
-              <label>
-                Room name
-                <input
-                  required
-                  maxLength={80}
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                  placeholder="ex: GA Committee"
-                />
-              </label>
-              <button className="btn btn-primary" type="submit" disabled={busy}>
-                Create room
-              </button>
-            </form>
-          ) : null}
+          <form className="panel" onSubmit={onCreateCommitteeRoom}>
+            <h2>Create committee room</h2>
+            <p className="muted">
+              Open to anyone with a GoMUN account — share the link after you create it. Joiners
+              pick chair or delegate when they enter.
+            </p>
+            <label>
+              Room name
+              <input
+                required
+                maxLength={80}
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+                placeholder="ex: GA Committee"
+              />
+            </label>
+            <label>
+              Meeting link (optional)
+              <input
+                type="url"
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                placeholder="ex: https://meet.google.com/… or Zoom link"
+              />
+            </label>
+            <button className="btn btn-primary" type="submit" disabled={busy}>
+              Create room
+            </button>
+          </form>
 
           <form className="panel" onSubmit={onJoin}>
             <h2>Join with invite code</h2>

@@ -275,6 +275,15 @@ textarea {
   gap: 0.4rem;
 }
 
+.committee-room-page .committee-timer {
+  font-size: clamp(2.5rem, 6vw, 3.75rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 .profile-avatar-row {
   display: flex;
   align-items: center;

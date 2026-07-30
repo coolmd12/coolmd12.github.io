@@ -163,5 +163,83 @@ service cloud.firestore {
         allow create, update, delete: if isClassroomTeacher(classroomId);
       }
     }
+
+    // Open committee rooms — any signed-in user with the link can join.
+    function roomDoc(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId)).data;
+    }
+
+    function isRoomChair(roomId) {
+      return signedIn() && roomDoc(roomId).chairId == request.auth.uid;
+    }
+
+    function isRoomCreator(roomId) {
+      return signedIn() && roomDoc(roomId).createdBy == request.auth.uid;
+    }
+
+    match /rooms/{roomId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'name', 'createdBy', 'chairId', 'currentStatus', 'createdAt', 'settings', 'speakerQueue'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.currentStatus == 'open'
+        && request.resource.data.speakerQueue is list;
+      allow update: if signedIn() && (
+        isRoomChair(roomId)
+        // Claim vacant chair seat on join (transaction pairs with participant create).
+        || (
+          resource.data.chairId == ''
+          && request.resource.data.chairId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['chairId'])
+        )
+      );
+      allow delete: if isRoomCreator(roomId) || isRoomChair(roomId);
+
+      match /participants/{userId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasAll([
+            'userId', 'displayName', 'role', 'raisedPlacard', 'joinedAt'
+          ])
+          && request.resource.data.userId == userId
+          && request.resource.data.role in ['delegate', 'chair']
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() > 0
+          && request.resource.data.displayName.size() <= 80
+          && request.resource.data.raisedPlacard == false;
+        allow update: if signedIn() && (
+          (
+            request.auth.uid == userId
+            && request.resource.data.userId == resource.data.userId
+            && request.resource.data.joinedAt == resource.data.joinedAt
+          )
+          || isRoomChair(roomId)
+        );
+        allow delete: if signedIn()
+          && (request.auth.uid == userId || isRoomChair(roomId) || isRoomCreator(roomId));
+      }
+
+      match /motions/{motionId} {
+        allow read: if signedIn();
+        allow create, update: if signedIn();
+        allow delete: if isRoomChair(roomId) || isRoomCreator(roomId);
+      }
+
+      match /messages/{messageId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+        allow update, delete: if false;
+      }
+    }
   }
 }
