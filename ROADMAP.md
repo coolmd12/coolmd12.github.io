@@ -41,10 +41,10 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 ## 5. Technology (stack decisions)
 
 - **Frontend:** React + Vite + TypeScript. Fast dev, small bundle.
-- **Backend:** Firebase Auth + Firestore. Serverless, real-time, free tier-friendly.
-- **Email verification:** Resend + Cloudflare Worker. Serverless, cheap, reliable.
+- **Backend:** Firebase Auth (**Google** sign-in) + Firestore. Serverless, real-time, free tier-friendly.
 - **Hosting:** GitHub Pages. Free, simple CI/CD.
 - **Avatars:** Initials only (Storage needs Blaze, avoided for now).
+- **Email codes (parked):** Resend + Cloudflare Worker remain in-repo if we revive email/password signup later (needs a verified sending domain).
 
 ---
 
@@ -52,8 +52,9 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Setup (project, auth, deploy) | Done | Basic CI/CD, auth, routing. |
-| Signup flow (email/code/pw/username) | Done | Includes email verification. |
+| Setup (project, auth, deploy) | Done | CI/CD, Google auth, routing. |
+| Signup / login (Continue with Google) | Done | Primary path; any Google/Gmail. |
+| Username + roles onboarding | Done | After first Google sign-in. |
 | Profile flow (display name, school, roles) | Done | Post-signup customize. |
 | Classroom flow (create, invite, join) | Done | Role-aware permissions. |
 | Practice rooms (text only) | Done | Simple free-form practice. |
@@ -61,12 +62,14 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | Core UI/UX polish | Done | General app usability. |
 | Role-aware UX | Done | Phase 1.6 completed. |
 | Multi-role accounts | Done | Student **and** teacher. |
+| Founder Stats (`/admin`) | Done | Hard-locked to `dhyanvim@gmail.com` only. |
 | Profile photos (Storage) | Not built | Needs Firebase Blaze. |
-| Live committee floor | Early scaffolding — Phase 2 next | Procedure floor (speakers/motions/timers) — **not** a video meeting. |
-| AI tools (Gemini) + prep Q&A assistant | Not built | Phase 3 — feedback, briefs, solo AI; also resource/Q&A (no editing user work). |
+| Email/password + Resend codes | Parked | Removed from UI; Worker kept for later. |
+| Live committee floor | Core done — polish left | Speakers, timer, motions, gavel; chat + UX polish open. |
+| AI tools (Gemini) + prep Q&A assistant | Not built | Phase 3. |
 | Conference filters | Not built | Phase 4. |
-| Tutorials / inbox / admin / drafting / notes | Not built | Phase 5 — RoP cheat sheets, clause builders, position papers, prep notes. |
-| In-app calling (voice/video) | Not built — Later | After core floor works; optional Meet/Zoom links remain until then. |
+| Tutorials / inbox / drafting / notes | Not built | Phase 5. |
+| In-app calling (voice/video) | Not built — Later | Meet/Zoom links until then. |
 | Speech & Debate (parallel practice mode) | Not built — Far future | Parked idea. |
 
 ---
@@ -76,10 +79,11 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 ### Phase 1 — Core MVP (signup, profile, classrooms, practice, conferences) ⬅️ done
 
 - [x] Basic project setup (Vite, React, TS, Firebase)
-- [x] Firebase Auth (email/password)
+- [x] Firebase Auth (email/password — legacy; **Google** is current UI)
 - [x] Firestore setup (rules, data models for users, classrooms)
-- [x] User signup flow (email → code → password/username/roles)
-- [x] Email verification with Resend + Cloudflare Worker
+- [x] Email-code signup via Resend + Worker (built, then **parked** from UI)
+- [x] **Continue with Google** signup / login (primary)
+- [x] Username + display name + roles onboarding for Google users
 - [x] User login / logout flows
 - [x] Profile management (display name, school, avatar initials)
 - [x] Create / join classrooms with invite codes
@@ -89,8 +93,9 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 - [x] General UI/UX polish
 - [x] Multi-role accounts (student **and** teacher on one UID)
 - [x] Role-aware UI (dashboard, classroom controls)
+- [x] Founder Stats page (`/admin`, `stats/app` counter)
 
-### Phase 2 — Live committee room ⬅️ next major build
+### Phase 2 — Live committee room ⬅️ core done; polish next
 
 **Goal:** Enable real-time, structured Model UN committee sessions.
 
@@ -214,26 +219,27 @@ Two future product lanes will expand the platform beyond basic classroom practic
 
 ## 8. Recommended build order
 
-1. Harden signup ops (rules published — including `emails/` + `roles` — Worker live, real Resend domain for public users)
+1. ~~Google Sign-In for public users (no paid Resend domain)~~ **Done**
 2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**
-3. **Phase 2** (live committee procedure floor — core differentiator)
+3. **Finish Phase 2** (basic chat + chair/delegate polish)
 4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops
 5. **Phase 6** in-app calling (after the floor is solid)
-6. Photos when Blaze is OK
+6. Photos when Blaze is OK · optional revive email-code signup with a verified domain
 
 ---
 
 ## 9. Key decisions
 
 - **Firebase Spark:** Stay on free tier for now. Upgrade to Blaze only if essential (e.g., Firebase Storage for photos, complex Cloud Functions).
+- **Google Sign-In:** Primary auth so any Gmail can join without a paid email-sending domain. Email/password + Resend codes are parked.
 - **Procedure floor first:** Phase 2 rooms = speakers / motions / timers / votes — not a video app. V1 voice/video = Meet/Zoom links. **In-app calling** comes later (Phase 6) and is especially for open ad-hoc rooms.
 - **Open committee rooms:** not limited to classroom members; any signed-in user can create and invite others via link.
 - **Join-time session role:** chair or delegate chosen when entering (editable in-room); delegate display name = country (manual until country assignment); chair name is typed; UI shows `Chair · …` / `Delegate · …`.
 - **Meeting link on create:** optional Meet/Zoom/etc. URL on the room until Phase 6 in-app calling.
 - **Multi-role accounts:** A single user ID can have multiple roles (student, teacher). UX adapts dynamically.
-- **Email verification:** Mandatory 6-digit code for signup via Resend + Cloudflare Worker.
 - **Username:** Discord-style unique handle, locked after signup. Display name is editable.
 - **Private classrooms:** No public lobbies or social features.
+- **Founder Stats:** `/admin` (“Founder's Stats”) is hard-locked to `dhyanvim@gmail.com` in the UI and Firestore read rules. Exact Auth roster stays in Firebase Console.
 
 ---
 

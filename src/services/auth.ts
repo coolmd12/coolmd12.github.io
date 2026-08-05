@@ -1,7 +1,9 @@
 import {
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
+  GoogleAuthProvider,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User,
@@ -20,6 +22,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase';
 import { validateDisplayName, validateUsername } from '../lib/username';
 import { checkSignupToken, consumeSignupToken } from './emailVerification';
+import { bumpRegisteredUserCount } from './stats';
 import {
   normalizeAccountRoles,
   profileRoles,
@@ -289,11 +292,15 @@ export async function registerUser(input: {
   }
 
   await updateProfile(cred.user, { displayName: displayCheck.displayName });
+  await bumpRegisteredUserCount();
   return profile;
 }
 
-/** One-time username claim for legacy accounts created before Phase 1.7. */
-export async function claimUsername(rawUsername: string): Promise<UserProfile> {
+/** One-time username (+ optional display name / roles) for legacy and Google accounts. */
+export async function claimUsername(
+  rawUsername: string,
+  extras?: { displayName?: string; roles?: UserRole[] },
+): Promise<UserProfile> {
   const { auth: a, db: database } = requireAuthDb();
   const user = a.currentUser;
   if (!user) throw new Error('You must be signed in to choose a username.');
@@ -303,23 +310,92 @@ export async function claimUsername(rawUsername: string): Promise<UserProfile> {
     throw new Error(usernameCheck.error);
   }
 
+  let displayName = (user.displayName || 'Delegate').trim() || 'Delegate';
+  if (extras?.displayName !== undefined) {
+    const displayCheck = validateDisplayName(extras.displayName);
+    if (displayCheck.ok === false) {
+      throw new Error(displayCheck.error);
+    }
+    displayName = displayCheck.displayName;
+  }
+
+  let rolePatch = normalizeAccountRoles(['student']);
+  if (extras?.roles?.length) {
+    rolePatch = normalizeAccountRoles(extras.roles);
+  }
+
   const existing = await fetchUserProfile(user.uid);
-  if (!existing) throw new Error('Profile not found.');
-  if (existing.username) throw new Error('Username is already set and cannot be changed.');
+  if (existing?.username) {
+    throw new Error('You already have a username. Change it anytime from your profile.');
+  }
+
+  const email = (user.email || existing?.email || '').trim().toLowerCase();
+  if (!email) throw new Error('Your account needs an email address.');
 
   const usernameRef = doc(database, 'usernames', usernameCheck.username);
   const userRef = doc(database, 'users', user.uid);
+  const emailRef = doc(database, 'emails', email);
 
+  const profile: UserProfile = {
+    uid: user.uid,
+    email,
+    username: usernameCheck.username,
+    displayName,
+    role: rolePatch.role,
+    roles: rolePatch.roles,
+    emailVerifiedAt: existing?.emailVerifiedAt ?? (isGoogleAuthUser(user) ? Date.now() : undefined),
+    profileSetupComplete: existing?.profileSetupComplete === true ? true : false,
+    createdAt: existing?.createdAt ?? Date.now(),
+    classroomIds: existing?.classroomIds ?? [],
+    ...(existing?.school ? { school: existing.school } : {}),
+    ...(existing?.photoURL ? { photoURL: existing.photoURL } : {}),
+  };
+
+  let createdNewProfile = false;
   await runTransaction(database, async (tx) => {
     const taken = await tx.get(usernameRef);
     if (taken.exists()) throw new Error('That username is already taken.');
+
     const snap = await tx.get(userRef);
-    if (!snap.exists()) throw new Error('Profile not found.');
-    const data = snap.data() as UserProfile;
-    if (data.username) throw new Error('Username is already set and cannot be changed.');
+    if (snap.exists()) {
+      const data = snap.data() as UserProfile;
+      if (data.username) {
+        throw new Error('You already have a username. Change it anytime from your profile.');
+      }
+      const patch: Record<string, unknown> = {
+        username: usernameCheck.username,
+        displayName,
+        role: rolePatch.role,
+        roles: rolePatch.roles,
+      };
+      tx.update(userRef, patch);
+    } else {
+      createdNewProfile = true;
+      const emailTaken = await tx.get(emailRef);
+      if (emailTaken.exists() && emailTaken.data()?.uid !== user.uid) {
+        throw new Error(EMAIL_ALREADY_IN_USE_MESSAGE);
+      }
+      if (!emailTaken.exists()) {
+        tx.set(emailRef, { uid: user.uid, createdAt: Date.now() });
+      }
+      tx.set(userRef, {
+        ...profile,
+        createdAtServer: serverTimestamp(),
+      });
+    }
+
     tx.set(usernameRef, { uid: user.uid, createdAt: Date.now() });
-    tx.update(userRef, { username: usernameCheck.username });
   });
+
+  try {
+    await updateProfile(user, { displayName });
+  } catch (err) {
+    console.warn('Could not sync Auth displayName', err);
+  }
+
+  if (createdNewProfile) {
+    await bumpRegisteredUserCount();
+  }
 
   const next = await fetchUserProfile(user.uid);
   if (!next) throw new Error('Profile not found.');
@@ -334,6 +410,77 @@ export async function loginUser(email: string, password: string) {
   const existing = await fetchUserProfile(cred.user.uid);
   if (existing) await ensureRolesClaim(existing);
   return cred;
+}
+
+function isGoogleAuthUser(user: User): boolean {
+  return user.providerData.some((p) => p.providerId === 'google.com');
+}
+
+function googleAuthErrorMessage(err: unknown): string {
+  const code =
+    err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+    return 'Google log in was cancelled.';
+  }
+  if (code === 'auth/popup-blocked') {
+    return 'Your browser blocked the Google log-in popup. Allow popups for this site and try again.';
+  }
+  if (code === 'auth/account-exists-with-different-credential') {
+    return 'This Google email is already linked to another log-in method. Try the same Google account you used before, or contact support.';
+  }
+  if (code === 'auth/unauthorized-domain') {
+    return 'This site domain is not authorized for Google log in in Firebase Auth settings.';
+  }
+  return err instanceof Error ? err.message : 'Could not log in with Google.';
+}
+
+/** Google OAuth — any Google account can join without Resend email codes. */
+export async function loginWithGoogle(): Promise<UserProfile> {
+  const { auth: a } = requireAuthDb();
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  let cred;
+  try {
+    cred = await signInWithPopup(a, provider);
+  } catch (err) {
+    throw new Error(googleAuthErrorMessage(err));
+  }
+
+  const user = cred.user;
+  const email = (user.email || '').trim().toLowerCase();
+  if (!email) {
+    await signOut(a);
+    throw new Error('Google did not provide an email address for this account.');
+  }
+
+  await ensureEmailClaim(user.uid, email);
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const existing = await fetchUserProfile(user.uid);
+    if (existing) {
+      return ensureRolesClaim(existing);
+    }
+    await sleep(80 * (attempt + 1));
+  }
+
+  // No Firestore doc yet — return an in-memory stub. Full profile is created
+  // on /choose-username (rules require username on create).
+  return googleOnboardingStub(user, email);
+}
+
+function googleOnboardingStub(user: User, email: string): UserProfile {
+  return {
+    uid: user.uid,
+    email,
+    displayName: (user.displayName || 'Delegate').trim() || 'Delegate',
+    role: 'student',
+    roles: ['student'],
+    emailVerifiedAt: Date.now(),
+    profileSetupComplete: false,
+    createdAt: Date.now(),
+    classroomIds: [],
+  };
 }
 
 export async function logoutUser() {
@@ -362,6 +509,13 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
 
   const { db: database } = requireAuthDb();
   const refDoc = doc(database, 'users', user.uid);
+  const fromGoogle = isGoogleAuthUser(user);
+
+  // Google users finish profile on /choose-username (username required on create).
+  if (fromGoogle) {
+    return googleOnboardingStub(user, (user.email || '').toLowerCase());
+  }
+
   const fallback: UserProfile = {
     uid: user.uid,
     email: (user.email || '').toLowerCase(),
@@ -422,6 +576,8 @@ async function syncMemberDisplay(
 
 export async function updateUserProfile(input: {
   displayName?: string;
+  username?: string;
+  roles?: UserRole[];
   school?: string;
   photoURL?: string | null;
   profileSetupComplete?: boolean;
@@ -444,6 +600,23 @@ export async function updateUserProfile(input: {
     displayName = check.displayName;
   }
 
+  let nextUsername = existing.username;
+  if (input.username !== undefined) {
+    const usernameCheck = validateUsername(input.username);
+    if (usernameCheck.ok === false) {
+      throw new Error(usernameCheck.error);
+    }
+    nextUsername = usernameCheck.username;
+  }
+
+  let nextRole = existing.role;
+  let nextRoles = existing.roles ?? profileRoles(existing);
+  if (input.roles !== undefined) {
+    const normalized = normalizeAccountRoles(input.roles);
+    nextRole = normalized.role;
+    nextRoles = normalized.roles;
+  }
+
   const nextSchool =
     input.school !== undefined ? input.school.trim() || undefined : existing.school;
   const nextPhoto =
@@ -457,20 +630,68 @@ export async function updateUserProfile(input: {
     await updateProfile(user, authPatch);
   }
 
-  const firestorePatch: Record<string, unknown> = {};
-  if (input.displayName !== undefined) firestorePatch.displayName = displayName;
-  if (input.school !== undefined) {
-    firestorePatch.school = nextSchool || deleteField();
-  }
-  if (input.photoURL !== undefined) {
-    firestorePatch.photoURL = nextPhoto || deleteField();
-  }
-  if (input.profileSetupComplete !== undefined) {
-    firestorePatch.profileSetupComplete = input.profileSetupComplete;
-  }
+  const usernameChanged =
+    input.username !== undefined && nextUsername && nextUsername !== existing.username;
 
-  if (Object.keys(firestorePatch).length) {
-    await updateDoc(doc(database, 'users', user.uid), firestorePatch);
+  if (usernameChanged) {
+    const newUsernameRef = doc(database, 'usernames', nextUsername!);
+    const userRef = doc(database, 'users', user.uid);
+    const oldUsername = existing.username;
+
+    await runTransaction(database, async (tx) => {
+      const taken = await tx.get(newUsernameRef);
+      if (taken.exists()) {
+        const owner = taken.data()?.uid;
+        if (owner !== user.uid) throw new Error('That username is already taken.');
+      }
+
+      const snap = await tx.get(userRef);
+      if (!snap.exists()) throw new Error('Profile not found.');
+
+      const patch: Record<string, unknown> = {
+        username: nextUsername,
+      };
+      if (input.displayName !== undefined) patch.displayName = displayName;
+      if (input.school !== undefined) {
+        patch.school = nextSchool || deleteField();
+      }
+      if (input.photoURL !== undefined) {
+        patch.photoURL = nextPhoto || deleteField();
+      }
+      if (input.roles !== undefined) {
+        patch.role = nextRole;
+        patch.roles = nextRoles;
+      }
+      if (input.profileSetupComplete !== undefined) {
+        patch.profileSetupComplete = input.profileSetupComplete;
+      }
+
+      tx.update(userRef, patch);
+      tx.set(newUsernameRef, { uid: user.uid, createdAt: Date.now() });
+      if (oldUsername && oldUsername !== nextUsername) {
+        tx.delete(doc(database, 'usernames', oldUsername));
+      }
+    });
+  } else {
+    const firestorePatch: Record<string, unknown> = {};
+    if (input.displayName !== undefined) firestorePatch.displayName = displayName;
+    if (input.school !== undefined) {
+      firestorePatch.school = nextSchool || deleteField();
+    }
+    if (input.photoURL !== undefined) {
+      firestorePatch.photoURL = nextPhoto || deleteField();
+    }
+    if (input.roles !== undefined) {
+      firestorePatch.role = nextRole;
+      firestorePatch.roles = nextRoles;
+    }
+    if (input.profileSetupComplete !== undefined) {
+      firestorePatch.profileSetupComplete = input.profileSetupComplete;
+    }
+
+    if (Object.keys(firestorePatch).length) {
+      await updateDoc(doc(database, 'users', user.uid), firestorePatch);
+    }
   }
 
   await syncMemberDisplay(database, existing, {
@@ -486,6 +707,9 @@ export async function updateUserProfile(input: {
   return {
     ...existing,
     displayName,
+    username: nextUsername,
+    role: nextRole,
+    roles: nextRoles,
     school: nextSchool,
     photoURL: nextPhoto,
     profileSetupComplete:

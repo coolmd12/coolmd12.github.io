@@ -35,11 +35,12 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 
 ## User flow (today)
 
-1. Sign up: email (block if already registered) → **code** → password + **username** + display name + capabilities (student and/or teacher)  
-2. Welcome: optional school (Skip OK) · avatars = **initials**  
-3. Dashboard → classroom → practice / conferences / profile  
+1. **Continue with Google** (signup or login)  
+2. New users: **username** + display name + capabilities (student and/or teacher)  
+3. Welcome: optional school (Skip OK) · avatars = **initials**  
+4. Dashboard → classroom / rooms → practice / conferences / profile  
 
-Account is created only when the user finishes signup and clicks **Create account** (code alone is not enough).
+Google proves the email; no Resend verification code in the current UI.
 
 ---
 
@@ -48,18 +49,20 @@ Account is created only when the user finishes signup and clicks **Create accoun
 | Area | Status |
 | --- | --- |
 | Landing, classrooms, invites | Done |
-| Secure signup (email code + username) | Done |
-| Early email-already-exists on step 1 | Done (`emails/` + Auth lookup) |
+| **Google Sign-In** (primary auth) | Done |
+| Username + roles onboarding | Done |
 | Profile / welcome (school; initials) | Done |
-| Signup / login UI polish | Done |
+| Signup / login UI (Google-only) | Done |
 | Role-aware UX | Done (Phase 1.6) |
 | Multi-role (student **and** teacher) | Done (`roles[]`) |
-| Rooms hub + early committee room scaffolding | Started (Phase 2) |
+| Founder's Stats (`/admin` — `dhyanvim@gmail.com` only) | Done |
+| Live committee floor (queue, timer, motions, gavel) | Mostly done (Phase 2) |
+| Basic chat / chair+delegate polish | Next (finish Phase 2) |
 | Profile photos (Storage) | Paused (Blaze) |
-| Live committee room (speakers / motions / timers) | **Next — Phase 2** (procedure floor, not video) |
+| Email/password + Resend codes | Parked (needs verified sending domain) |
 | AI (Gemini) | Phase 3 |
 | Conference filters | Phase 4 |
-| Tutorials / inbox / admin / drafting tools / notes | Phase 5 |
+| Tutorials / inbox / drafting tools / notes | Phase 5 |
 | In-app calling (voice / video) | Phase 6 — later |
 | Speech & Debate (parallel practice mode) | Far future — parked |
 
@@ -67,10 +70,10 @@ Account is created only when the user finishes signup and clicks **Create accoun
 
 ## Locked decisions
 
-- One **GoMUN password** (never Gmail password)  
-- Email **verification code** via Resend + Cloudflare Worker  
+- **Continue with Google** is the signup / login path (Spark-friendly; any Gmail)  
 - Discord-style **username** (locked) + **display name** (editable)  
 - Stay on Firebase **Spark** while building; no Blaze until photos/AI need it  
+- No paid sending domain required for auth (Resend email-code path parked)  
 - Conferences = outbound links only  
 - Rooms = **open procedure floors** (any signed-in user; share link) — not classroom-gated, not video meetings  
 - Join: pick **chair** or **delegate** (editable in-room); delegate = **country**; chair = typed name; labels `Chair ·` / `Delegate ·`; raise **placard** → speaker queue  
@@ -78,23 +81,24 @@ Account is created only when the user finishes signup and clicks **Create accoun
 - Motions: anyone proposes; multiple pending; chair opens vote; procedural **yes/no**; tally chair-only until closed  
 - Speaker timer: custom duration; chair leftover-time bank (practice aid)  
 - Chair **manual gavel** (one tap per click), synced to the room  
+- Founder **Founder's Stats** via `/admin` — hard-locked to `dhyanvim@gmail.com` only  
 
 ---
 
 ## Stack (one glance)
 
-React + Vite + TypeScript · Firebase Auth + Firestore · Resend + Cloudflare Worker · GitHub Pages  
-Dev: `npm run dev` → **http://localhost:5173** · Env: `.env.local` (`VITE_FIREBASE_*`, `VITE_EMAIL_VERIFY_URL`)
+React + Vite + TypeScript · Firebase Auth (Google) + Firestore · GitHub Pages  
+Dev: `npm run dev` → **http://localhost:5173** · Env: `.env.local` (`VITE_FIREBASE_*`)
 
-Worker: `workers/email-verification/` · Rules: `firebase/firestore.rules`
+Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/`
 
 ---
 
 ## Build order
 
-1. Harden signup ops (rules published — including `emails/` + `roles` — Worker live, real Resend domain for public users)  
+1. ~~Google Sign-In for public signup (no paid Resend domain)~~ **Done**  
 2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**  
-3. **Phase 2** live committee procedure floor (speakers, motions, timers)  
+3. **Finish Phase 2** (chat, chair/delegate polish)  
 4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
 5. **Phase 6** in-app calling  
 6. Photos when Blaze is OK  
@@ -103,7 +107,7 @@ Worker: `workers/email-verification/` · Rules: `firebase/firestore.rules`
 
 ## Open ideas (parked)
 
-Parent/guardian role · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
+Parent/guardian role · revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
 
 ---
 

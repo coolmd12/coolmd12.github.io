@@ -14,9 +14,11 @@ export function LandingPage() {
       <section className="hero">
         <div className="hero-atmosphere" aria-hidden="true" />
         <div className="shell hero-content">
-          <p className="hero-kicker">Free forever · Students & teachers</p>
-          <h1 className="hero-brand">GoMUN</h1>
-          <p className="hero-title">Delegate Arena</p>
+          <p className="hero-kicker">Genuinely free · Students & teachers</p>
+          <h1 className="hero-brand">
+            GoMUN
+            <span className="hero-brand-rest">Delegate Arena</span>
+          </h1>
           <p className="hero-lede">
             Our vision is for you to practice Model United Nations like an expert, find and
             compete in more and more conferences, and become the powerful delegate you were
@@ -194,7 +196,7 @@ export function LandingPage() {
                 <h2>Start with a secure account</h2>
                 <p>
                   Create an account as a student, teacher, or both — then open a private
-                  classroom and start practicing. Core practice stays $0 — no paid tiers planned.
+                  classroom and start practicing. Genuinely free, with no paid tiers planned.
                 </p>
               </div>
               <Link to="/signup" className="btn btn-primary btn-lg">

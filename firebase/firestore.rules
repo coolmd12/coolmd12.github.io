@@ -47,9 +47,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSelf(userId)
         || (signedIn() && resource.data.keys().hasAll(['displayName', 'role']));
+      // Username optional on create (Google / legacy); editable later from profile.
       allow create: if isSelf(userId)
         && request.resource.data.keys().hasAll([
-          'uid', 'email', 'username', 'displayName', 'role', 'createdAt'
+          'uid', 'email', 'displayName', 'role', 'createdAt'
         ])
         && request.resource.data.uid == userId
         && request.resource.data.role in ['student', 'teacher']
@@ -58,7 +59,10 @@ service cloud.firestore {
           || validRolesList(request.resource.data.roles)
         )
         && request.resource.data.email == request.auth.token.email.lower()
-        && validUsername(request.resource.data.username);
+        && (
+          !('username' in request.resource.data)
+          || validUsername(request.resource.data.username)
+        );
       allow update: if isSelf(userId)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
@@ -68,18 +72,8 @@ service cloud.firestore {
           || validRolesList(request.resource.data.roles)
         )
         && (
-          // Username immutable once set; legacy users may set it once; roles backfill OK without username.
-          (
-            !('username' in resource.data)
-            && (
-              !('username' in request.resource.data)
-              || validUsername(request.resource.data.username)
-            )
-          )
-          || (
-            'username' in resource.data
-            && request.resource.data.username == resource.data.username
-          )
+          !('username' in request.resource.data)
+          || validUsername(request.resource.data.username)
         );
       allow delete: if false;
     }
@@ -92,7 +86,9 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['uid', 'createdAt'])
         && request.resource.data.uid == request.auth.uid
         && validUsername(username);
-      allow update, delete: if false;
+      // Owner may release a handle when changing username from profile.
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update: if false;
     }
 
     match /emails/{email} {
@@ -240,6 +236,24 @@ service cloud.firestore {
           && request.resource.data.text.size() <= 1000;
         allow update, delete: if false;
       }
+    }
+
+    // Registered-user counter. Anyone signed in may increment on first profile create;
+    // only the founder may read the count.
+    match /stats/{docId} {
+      allow read: if signedIn()
+        && request.auth.token.email.lower() == 'dhyanvim@gmail.com';
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['userCount', 'updatedAt'])
+        && request.resource.data.userCount is int
+        && request.resource.data.userCount == 1
+        && request.resource.data.updatedAt is number;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userCount', 'updatedAt'])
+        && request.resource.data.userCount is int
+        && request.resource.data.updatedAt is number
+        && request.resource.data.userCount == resource.data.userCount + 1;
+      allow delete: if false;
     }
   }
 }

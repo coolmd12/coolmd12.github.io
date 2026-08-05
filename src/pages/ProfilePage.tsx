@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfile } from '../services/auth';
-import { formatCapabilities } from '../types';
+import { normalizeAccountRoles, profileRoles, type UserRole } from '../types';
+import { validateDisplayName, validateUsername } from '../lib/username';
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -17,7 +18,9 @@ export function ProfilePage() {
   const { profile, refreshProfile } = useAuth();
 
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [school, setSchool] = useState('');
+  const [roles, setRoles] = useState<UserRole[]>(['student']);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
@@ -25,7 +28,9 @@ export function ProfilePage() {
   useEffect(() => {
     if (!profile) return;
     setDisplayName(profile.displayName);
+    setUsername(profile.username || '');
     setSchool(profile.school || '');
+    setRoles(profileRoles(profile).length ? profileRoles(profile) : ['student']);
   }, [profile]);
 
   if (!profile) {
@@ -43,11 +48,34 @@ export function ProfilePage() {
     e.preventDefault();
     setError('');
     setOk('');
+
+    const nameCheck = validateDisplayName(displayName);
+    if (nameCheck.ok === false) {
+      setError(nameCheck.error);
+      return;
+    }
+
+    const usernameCheck = validateUsername(username);
+    if (usernameCheck.ok === false) {
+      setError(usernameCheck.error);
+      return;
+    }
+
+    let normalized;
+    try {
+      normalized = normalizeAccountRoles(roles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Choose at least one role.');
+      return;
+    }
+
     setBusy(true);
     try {
       await updateUserProfile({
-        displayName,
+        displayName: nameCheck.displayName,
+        username: usernameCheck.username,
         school,
+        roles: normalized.roles,
       });
       await refreshProfile();
       setOk('Profile saved.');
@@ -79,8 +107,7 @@ export function ProfilePage() {
             <span>{initials}</span>
           </div>
           <p className="muted profile-hint">
-            Photos are off for now so we can stay on Firebase’s free plan. Your initials show
-            instead.
+            Your initials appear in rooms and classrooms.
           </p>
         </div>
 
@@ -96,8 +123,15 @@ export function ProfilePage() {
 
         <label>
           Username
-          <input value={current.username ? `@${current.username}` : 'Not set'} disabled readOnly />
-          <span className="field-hint">Usernames are locked after signup (Discord-style).</span>
+          <input
+            required
+            maxLength={32}
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+            placeholder="ex: dhyanvi_m"
+          />
+          <span className="field-hint">Letters, numbers, underscores, and periods only.</span>
         </label>
 
         <label>
@@ -110,14 +144,44 @@ export function ProfilePage() {
           />
         </label>
 
+        <fieldset className="role-fieldset">
+          <legend>I am a…</legend>
+          <div className="role-cards">
+            <label className={`role-card ${roles.includes('student') ? 'selected' : ''}`}>
+              <input
+                type="checkbox"
+                checked={roles.includes('student')}
+                onChange={(e) =>
+                  setRoles((prev) =>
+                    e.target.checked
+                      ? Array.from(new Set([...prev, 'student']))
+                      : prev.filter((r) => r !== 'student'),
+                  )
+                }
+              />
+              <span>Student / delegate</span>
+            </label>
+            <label className={`role-card ${roles.includes('teacher') ? 'selected' : ''}`}>
+              <input
+                type="checkbox"
+                checked={roles.includes('teacher')}
+                onChange={(e) =>
+                  setRoles((prev) =>
+                    e.target.checked
+                      ? Array.from(new Set([...prev, 'teacher']))
+                      : prev.filter((r) => r !== 'teacher'),
+                  )
+                }
+              />
+              <span>Teacher / advisor</span>
+            </label>
+          </div>
+        </fieldset>
+
         <label>
           Email
           <input value={current.email} disabled readOnly />
-        </label>
-
-        <label>
-          Capabilities
-          <input value={formatCapabilities(current) || current.role} disabled readOnly />
+          <span className="field-hint">Managed by your Google account.</span>
         </label>
 
         <button className="btn btn-primary" type="submit" disabled={busy}>

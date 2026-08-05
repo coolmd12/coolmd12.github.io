@@ -3,11 +3,13 @@ import { useState, useEffect, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCapabilities } from '../../types';
+import { isFounderEmail } from '../../services/stats';
 
 export function SiteHeader() {
   const { user, profile, logout, configured } = useAuth();
   const [showRoomsModal, setShowRoomsModal] = useState(false);
   const caps = formatCapabilities(profile);
+  const showFounderStats = isFounderEmail(profile?.email || user?.email);
 
   useEffect(() => {
     if (!showRoomsModal) return;
@@ -63,6 +65,7 @@ export function SiteHeader() {
             Rooms
           </NavLink>
           {user ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
+          {showFounderStats ? <NavLink to="/admin">Founder&apos;s Stats</NavLink> : null}
         </nav>
 
         <div className="header-actions">
@@ -71,7 +74,7 @@ export function SiteHeader() {
           ) : null}
           {user ? (
             <>
-              <Link to="/profile" className="user-chip user-chip-link" title="Edit profile">
+              <Link to="/profile" className="user-chip user-chip-link" aria-label="Edit profile">
                 <span className="avatar avatar-sm" aria-hidden="true">
                   {profile?.photoURL ? (
                     <img src={profile.photoURL} alt="" />
@@ -86,22 +89,33 @@ export function SiteHeader() {
                     </span>
                   )}
                 </span>
-                <span>
-                  {profile?.displayName || 'Delegate'}
-                  {profile?.username ? ` · @${profile.username}` : ''}
-                  {caps ? ` · ${caps}` : ''}
+                <span className="user-chip-text">
+                  <span className="user-chip-name">{profile?.displayName || 'Delegate'}</span>
+                  {profile?.username ? (
+                    <span className="user-chip-meta">@{profile.username}</span>
+                  ) : caps ? (
+                    <span className="user-chip-meta">{caps}</span>
+                  ) : null}
+                </span>
+                <span className="user-chip-tip" aria-hidden="true">
+                  Edit profile
                 </span>
               </Link>
-              <button type="button" className="btn btn-ghost" onClick={() => void logout()}>
+              <button
+                type="button"
+                className="btn btn-ghost header-action-tip"
+                data-tip="End session"
+                onClick={() => void logout()}
+              >
                 Sign out
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="btn btn-ghost">
+              <Link to="/login" className="btn btn-ghost header-action-tip" data-tip="Welcome back">
                 Log in
               </Link>
-              <Link to="/signup" className="btn btn-primary">
+              <Link to="/signup" className="btn btn-primary header-action-tip" data-tip="Create a free account">
                 Sign up
               </Link>
             </>
@@ -121,7 +135,10 @@ export function SiteHeader() {
                   ×
                 </button>
                 <h2 id="rooms-modal-title">Live committee rooms</h2>
-                <p className="muted">Live committee rooms are available to signed-in users. Create a free account to start or sign in to join rooms.</p>
+                <p className="muted">
+                  Live committee rooms are available to logged-in users. Create a free account to
+                  start or log in to join rooms.
+                </p>
                 <div className="modal-actions">
                   <Link to="/signup" className="btn btn-primary btn-lg" onClick={() => setShowRoomsModal(false)}>
                     Sign up
@@ -145,7 +162,7 @@ export function SiteFooter() {
       <div className="shell footer-inner">
         <div>
           <strong>GoMUN Delegate Arena</strong>
-          <p>Free practice for students and teachers. Always $0.</p>
+          <p>Genuinely free practice for students and teachers.</p>
           <p className="footer-meta">Founded by Dhyanvi Mehta</p>
         </div>
         <p className="footer-note">

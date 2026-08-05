@@ -1,5 +1,7 @@
 # Email verification Worker (Resend + KV)
 
+> **Status: parked.** The live app uses **Continue with Google** only. This Worker remains for a possible future return to email-code signup (requires a Resend-verified sending domain to email arbitrary Gmails).
+
 Sends 6-digit signup codes via [Resend](https://resend.com) and issues short-lived signup tokens. Runs on **Cloudflare Workers** free tier so Firebase can stay on Spark (no Blaze).
 
 ## Endpoints

@@ -13,6 +13,7 @@ import {
   claimUsername,
   ensureUserProfile,
   loginUser,
+  loginWithGoogle,
   logoutUser,
   registerUser,
 } from '../services/auth';
@@ -32,8 +33,12 @@ interface AuthContextValue {
     roles: UserRole[];
     signupToken: string;
   }) => Promise<void>;
-  claimUsername: (username: string) => Promise<void>;
+  claimUsername: (
+    username: string,
+    extras?: { displayName?: string; roles?: UserRole[] },
+  ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -91,13 +96,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const claimUsernameFn = useCallback(async (username: string) => {
-    const p = await claimUsername(username);
-    setProfile(p);
-  }, []);
+  const claimUsernameFn = useCallback(
+    async (username: string, extras?: { displayName?: string; roles?: UserRole[] }) => {
+      const p = await claimUsername(username, extras);
+      setProfile(p);
+    },
+    [],
+  );
 
   const login = useCallback(async (email: string, password: string) => {
     await loginUser(email, password);
+  }, []);
+
+  const loginWithGoogleFn = useCallback(async () => {
+    const p = await loginWithGoogle();
+    setUser(auth?.currentUser ?? null);
+    setProfile(p);
   }, []);
 
   const logout = useCallback(async () => {
@@ -115,9 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       claimUsername: claimUsernameFn,
       login,
+      loginWithGoogle: loginWithGoogleFn,
       logout,
     }),
-    [user, profile, loading, refreshProfile, register, claimUsernameFn, login, logout],
+    [
+      user,
+      profile,
+      loading,
+      refreshProfile,
+      register,
+      claimUsernameFn,
+      login,
+      loginWithGoogleFn,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
