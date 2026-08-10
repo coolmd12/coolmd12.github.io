@@ -62,6 +62,9 @@ export interface Room {
   zoomLink?: string;
   /** Single external call link (Meet, Zoom, etc.) until in-app calling. */
   meetingLink?: string;
+  /** Set when host/chair closes the room — hidden from dashboards; link shows closed. */
+  closedAt?: number | null;
+  closedBy?: string | null;
   /** Chair gavel pulse — all clients play taps when `at` changes. */
   lastGavel?: {
     taps: 1 | 2;

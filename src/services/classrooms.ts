@@ -13,6 +13,7 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { generateInviteCode } from '../lib/utils';
 import { addClassroomToUser } from './auth';
+import { logActivity } from './activity';
 import { canTeach, type Classroom, type ClassroomMember, type UserProfile } from '../types';
 
 function requireDb() {
@@ -82,6 +83,14 @@ export async function createClassroom(input: {
 
   await batch.commit();
   await addClassroomToUser(input.teacher.uid, classroomRef.id);
+  void logActivity(input.teacher.uid, {
+    kind: 'classroom_created',
+    title: 'Created a classroom',
+    detail: classroom.name,
+    subjectId: classroom.id,
+    href: `/classroom/${classroom.id}`,
+    at: classroom.createdAt,
+  });
   return classroom;
 }
 
@@ -122,7 +131,18 @@ export async function joinClassroomByCode(
     throw new Error('This classroom no longer exists.');
   }
 
-  return { id: classroomSnap.id, ...(classroomSnap.data() as Omit<Classroom, 'id'>) };
+  const classroom = { id: classroomSnap.id, ...(classroomSnap.data() as Omit<Classroom, 'id'>) };
+  if (!memberSnap.exists()) {
+    void logActivity(user.uid, {
+      kind: 'classroom_joined',
+      title: 'Joined a classroom',
+      detail: classroom.name,
+      subjectId: classroom.id,
+      href: `/classroom/${classroom.id}`,
+    });
+  }
+
+  return classroom;
 }
 
 export async function listUserClassrooms(classroomIds: string[]): Promise<Classroom[]> {
