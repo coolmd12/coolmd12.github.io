@@ -142,7 +142,7 @@ export function WelcomeSetupPage() {
             {busy ? 'Saving…' : 'Save and continue'}
           </button>
           <button
-            className="btn btn-ghost"
+            className="btn btn-ghost-dark"
             type="button"
             disabled={busy}
             onClick={() => void onSkip()}

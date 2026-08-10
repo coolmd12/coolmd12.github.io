@@ -93,7 +93,7 @@ export function ProfilePage() {
           <h1>Your profile</h1>
           <p className="muted">Customize how you appear in classrooms and sessions.</p>
         </div>
-        <Link to="/dashboard" className="btn btn-ghost">
+        <Link to="/dashboard" className="btn btn-secondary">
           Back to dashboard
         </Link>
       </header>

@@ -7,16 +7,20 @@
   --un-blue-deep: #0077a8;
   --gold: #c4a35a;
   --gold-soft: #e8d7a8;
-  --ivory: #f3f6fa;
-  --mist: #d9e3ef;
-  --ink: #142033;
-  --muted: #5b6b7c;
+  --ivory: #f4f7fb;
+  --mist: #d5e0ec;
+  --ink: #122033;
+  --muted: #5a6b7d;
   --ok: #1f7a4d;
   --warn: #8a6d1d;
   --error: #9b2c2c;
-  --radius: 14px;
-  --shadow: 0 18px 50px rgba(7, 21, 38, 0.14);
-  --shadow-soft: 0 10px 28px rgba(7, 21, 38, 0.08);
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 20px 48px rgba(7, 21, 38, 0.12);
+  --shadow-soft: 0 8px 24px rgba(7, 21, 38, 0.07);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --line: rgba(18, 32, 51, 0.08);
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
 }
@@ -38,9 +42,10 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background:
-    radial-gradient(circle at 10% 0%, rgba(0, 158, 219, 0.14), transparent 32%),
-    radial-gradient(circle at 92% 8%, rgba(196, 163, 90, 0.12), transparent 26%),
-    linear-gradient(165deg, #eef4f9 0%, #f7fafc 45%, #e9eef5 100%);
+    radial-gradient(ellipse 55% 40% at 8% -5%, rgba(0, 158, 219, 0.16), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 96% 0%, rgba(196, 163, 90, 0.14), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 70% 100%, rgba(11, 31, 58, 0.05), transparent 55%),
+    linear-gradient(168deg, #eaf2f8 0%, #f6f9fc 42%, #eef2f6 100%);
   line-height: 1.55;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -107,9 +112,9 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 20;
-  backdrop-filter: blur(14px);
-  background: rgba(7, 21, 38, 0.86);
-  border-bottom: 1px solid rgba(217, 227, 239, 0.12);
+  backdrop-filter: blur(16px) saturate(1.15);
+  background: linear-gradient(180deg, rgba(7, 21, 38, 0.94), rgba(7, 21, 38, 0.88));
+  border-bottom: 1px solid rgba(232, 215, 168, 0.12);
   --header-height: 4.25rem;
 }
 
@@ -198,18 +203,28 @@ textarea {
 
 .nav {
   display: flex;
-  gap: 1rem;
+  gap: 0.35rem;
+  align-items: center;
 }
 
 .nav a {
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
   font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  transition: color 160ms ease, background 160ms ease;
 }
 
 .nav a.active,
 .nav a:hover {
   color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav a.active {
+  box-shadow: inset 0 0 0 1px rgba(232, 215, 163, 0.28);
 }
 
 .header-actions {
@@ -459,10 +474,11 @@ textarea {
   grid-template-columns: 1.3fr auto auto;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.8rem 0.9rem;
-  border: 1px solid var(--mist);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(244, 248, 252, 0.85));
+  box-shadow: var(--shadow-soft);
 }
 
 .committee-room-page .link-list {
@@ -484,10 +500,11 @@ textarea {
 .committee-room-page .room-chat-list {
   height: 16rem;
   overflow-y: auto;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--mist);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.65);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(241, 246, 250, 0.7));
 }
 
 .committee-room-page .room-chat-messages {
@@ -544,29 +561,123 @@ textarea {
   margin: 0;
 }
 
-.committee-room-list-item {
+.committee-room-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.room-list-empty {
+  margin: 0;
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(11, 31, 58, 0.16);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.committee-room-card {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1rem;
+  gap: 0.85rem 1.1rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--mist);
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(244, 248, 252, 0.88));
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.committee-room-list-item:last-child {
-  border-bottom: none;
+.committee-room-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 158, 219, 0.28);
+  box-shadow: 0 14px 32px rgba(7, 21, 38, 0.1);
 }
 
-.committee-room-list-main {
+.committee-room-card.is-past {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(238, 242, 246, 0.7));
+}
+
+.committee-room-card.is-past:hover {
+  border-color: rgba(196, 163, 90, 0.35);
+}
+
+.committee-room-card-main {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.35rem;
   min-width: 12rem;
+  flex: 1;
 }
 
-.committee-room-list-main span {
+.committee-room-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+}
+
+.committee-room-card-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: 0.01em;
+}
+
+.committee-room-card-meta {
+  margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  text-transform: capitalize;
+}
+
+.meta-dot {
+  opacity: 0.55;
+}
+
+.room-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.room-status-chip.is-live {
+  color: #0f5c38;
+  background: rgba(31, 122, 77, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(31, 122, 77, 0.22);
+}
+
+.room-status-chip.is-live::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: #1f7a4d;
+  box-shadow: 0 0 0 3px rgba(31, 122, 77, 0.18);
+}
+
+.room-status-chip.is-closed {
+  color: #5a6b7d;
+  background: rgba(90, 107, 125, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(90, 107, 125, 0.18);
 }
 
 .committee-room-list-actions {
@@ -574,6 +685,25 @@ textarea {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.committee-room-list-actions .btn {
+  min-width: 5.5rem;
+}
+
+.rooms-section + .rooms-section {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.rooms-section h2 {
+  font-size: 1.45rem;
+  margin-bottom: 0.25rem;
+}
+
+.rooms-section > .muted {
+  margin-bottom: 1rem;
 }
 
 .profile-avatar-row {
@@ -759,15 +889,17 @@ textarea {
   gap: 0.4rem;
   border: 1px solid transparent;
   border-radius: 999px;
-  padding: 0.55rem 1.05rem;
+  padding: 0.58rem 1.15rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  letter-spacing: 0.01em;
   transition:
     transform 180ms ease,
     background 180ms ease,
     border-color 180ms ease,
-    box-shadow 180ms ease;
+    box-shadow 180ms ease,
+    color 180ms ease;
 }
 
 .btn:hover:not(:disabled) {
@@ -781,14 +913,24 @@ textarea {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--un-blue), var(--un-blue-deep));
+  background: linear-gradient(135deg, #12a8e4, var(--un-blue-deep));
   color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 119, 168, 0.22);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 12px 26px rgba(0, 119, 168, 0.28);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface-strong);
   color: var(--navy);
-  border-color: var(--mist);
+  border-color: rgba(11, 31, 58, 0.1);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: rgba(0, 158, 219, 0.35);
+  color: var(--un-blue-deep);
 }
 
 .btn-ghost {
@@ -798,7 +940,7 @@ textarea {
 }
 
 .btn-lg {
-  padding: 0.8rem 1.35rem;
+  padding: 0.85rem 1.4rem;
 }
 
 .landing {
@@ -983,6 +1125,20 @@ textarea {
   margin-top: 2rem;
 }
 
+.about-points > div {
+  padding: 1.15rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-soft);
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.about-points > div:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 158, 219, 0.28);
+}
+
 .about-points h3 {
   font-size: 1.25rem;
   margin-bottom: 0.35rem;
@@ -1103,12 +1259,32 @@ textarea {
 }
 
 .mode-grid article {
-  transition: transform 180ms ease, border-color 180ms ease;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
 }
 
 .mode-grid article:hover {
   transform: translateY(-3px);
   border-color: rgba(0, 158, 219, 0.35);
+  box-shadow: var(--shadow);
+}
+
+.mode-grid article h2 {
+  font-size: 1.45rem;
+  color: var(--navy);
+  margin: 0;
+}
+
+.mode-grid article p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mode-grid article .btn {
+  margin-top: 0.35rem;
+  justify-self: start;
 }
 
 @media (max-width: 720px) {
@@ -1138,10 +1314,12 @@ textarea {
 .feature-list li,
 .mode-grid article,
 .panel {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(217, 227, 239, 0.95);
-  border-radius: var(--radius);
-  padding: 1.15rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 2px);
+  padding: 1.25rem 1.35rem;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px);
 }
 
 .feature-list {
@@ -1209,8 +1387,13 @@ textarea {
 .dashboard,
 .classroom-page,
 .conferences-page,
-.practice-page {
+.practice-page,
+.committee-room-page {
   padding: 2.5rem 0 4rem;
+}
+
+main.shell:has(.page-header) {
+  padding-block: 2.5rem 4rem;
 }
 
 /* —— Dashboard activity timeline —— */
@@ -1231,31 +1414,17 @@ textarea {
   flex-wrap: wrap;
   gap: 1.25rem 1.75rem;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   margin-bottom: 1.15rem;
 }
 
-.activity-eyebrow {
-  margin: 0 0 0.2rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--un-blue-deep);
-  font-weight: 600;
-}
-
-.activity-strip h2 {
-  margin: 0 0 0.35rem;
+.activity-heading {
+  margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-size: clamp(1.75rem, 3.2vw, 2.25rem);
   font-weight: 600;
   color: var(--navy);
   letter-spacing: 0.01em;
-}
-
-.activity-strip-head .muted {
-  margin: 0;
-  max-width: 36rem;
 }
 
 .activity-usage-chips {
@@ -1296,18 +1465,21 @@ textarea {
 .activity-timeline-scroll {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0.85rem 0.15rem 0.35rem;
+  padding: 2.6rem 0.25rem 0.65rem;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
 }
 
 .activity-timeline {
   list-style: none;
   margin: 0;
-  padding: 1.1rem 0.5rem 0.25rem;
+  padding: 0.35rem 0.75rem 0.25rem;
   display: flex;
   align-items: flex-start;
   gap: 0;
+  width: max-content;
   min-width: max-content;
   position: relative;
 }
@@ -1317,7 +1489,7 @@ textarea {
   position: absolute;
   left: 0.5rem;
   right: 0.5rem;
-  top: 1.35rem;
+  top: 0.58rem;
   height: 3px;
   border-radius: 999px;
   background: linear-gradient(
@@ -1330,8 +1502,8 @@ textarea {
 
 .activity-node {
   position: relative;
-  width: 9.5rem;
-  flex: 0 0 9.5rem;
+  width: 8.5rem;
+  flex: 0 0 8.5rem;
   scroll-snap-align: start;
   padding: 0 0.35rem;
 }
@@ -1339,20 +1511,22 @@ textarea {
 .activity-node-link {
   display: grid;
   justify-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   text-align: center;
   text-decoration: none;
   color: inherit;
+  position: relative;
+  outline: none;
 }
 
 .activity-dot {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
   border: 2px solid #fff;
   box-shadow: 0 0 0 2px rgba(11, 31, 58, 0.12), 0 4px 10px rgba(7, 21, 38, 0.18);
   z-index: 1;
-  margin-top: 0.15rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .activity-dot.kind-account {
@@ -1374,35 +1548,95 @@ textarea {
   background: #b5654a;
 }
 
+.activity-hover-card {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 0.05rem);
+  transform: translateX(-50%) translateY(0.25rem);
+  width: max-content;
+  max-width: 11rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: var(--navy);
+  color: #f5f8fc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(7, 21, 38, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  z-index: 3;
+}
+
+.activity-hover-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--navy);
+}
+
+.activity-node-link:hover .activity-hover-card,
+.activity-node-link:focus-visible .activity-hover-card,
+.activity-node-link:focus-within .activity-hover-card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.activity-node-link:hover .activity-dot,
+.activity-node-link:focus-visible .activity-dot {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px rgba(0, 158, 219, 0.22), 0 6px 14px rgba(7, 21, 38, 0.2);
+}
+
 .activity-day {
   font-size: 0.75rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-.activity-title {
-  font-size: 0.88rem;
-  line-height: 1.25;
-  color: var(--ink);
-  font-weight: 600;
-}
-
 .activity-detail {
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.3;
-  max-width: 8.5rem;
+  font-size: 0.78rem;
+  color: var(--ink);
+  line-height: 1.25;
+  font-weight: 600;
+  max-width: 7.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-a.activity-node-link:hover .activity-title {
+.committee-past-heading {
+  margin: 1.35rem 0 0.35rem;
+  font-size: 1.05rem;
+  font-family: var(--font-display);
+  color: var(--navy);
+}
+
+.panel-footer-link {
+  margin: 1.15rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.panel-footer-link a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.panel-footer-link a:hover {
+  text-decoration: underline;
+}
+
+a.activity-node-link:hover .activity-detail {
   color: var(--un-blue-deep);
-}
-
-a.activity-node-link:hover .activity-dot {
-  transform: scale(1.12);
 }
 
 label {
@@ -1429,10 +1663,11 @@ input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid #c9d5e4;
-  border-radius: 10px;
-  padding: 0.8rem 0.9rem;
-  background: #fff;
+  border: 1px solid rgba(11, 31, 58, 0.12);
+  border-radius: 12px;
+  padding: 0.8rem 0.95rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 2px rgba(7, 21, 38, 0.03);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -1475,24 +1710,28 @@ textarea:focus {
 }
 
 .banner {
-  padding: 0.75rem 0.9rem;
-  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
   margin: 0 0 1rem;
+  border: 1px solid transparent;
 }
 
 .banner.error {
-  background: #f8e8e8;
+  background: rgba(155, 44, 44, 0.08);
   color: var(--error);
+  border-color: rgba(155, 44, 44, 0.16);
 }
 
 .banner.warn {
-  background: #f8f1da;
+  background: rgba(138, 109, 29, 0.1);
   color: var(--warn);
+  border-color: rgba(138, 109, 29, 0.18);
 }
 
 .banner.ok {
-  background: #e5f5ec;
+  background: rgba(31, 122, 77, 0.1);
   color: var(--ok);
+  border-color: rgba(31, 122, 77, 0.16);
 }
 
 .page-header {
@@ -1500,11 +1739,20 @@ textarea:focus {
   justify-content: space-between;
   gap: 1rem;
   align-items: start;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.85rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .page-header h1 {
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(2.05rem, 4vw, 2.85rem);
+  color: var(--navy);
+  letter-spacing: 0.01em;
+}
+
+.page-header .muted {
+  max-width: 40rem;
+  margin-bottom: 0;
 }
 
 .conference-hero {
@@ -1549,10 +1797,11 @@ textarea:focus {
   gap: 1.25rem;
   align-items: center;
   padding: 1.25rem 1.35rem;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(217, 227, 239, 0.95);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 2px);
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
@@ -1590,12 +1839,12 @@ textarea:focus {
 .auth-panel {
   width: min(480px, 100%);
   margin: 0 auto;
-  padding: 1.85rem 1.7rem;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--mist);
-  border-radius: calc(var(--radius) + 4px);
+  padding: 1.95rem 1.8rem;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 6px);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
 }
 
 .auth-panel form {
@@ -1630,6 +1879,11 @@ textarea:focus {
   gap: 1rem;
 }
 
+.classroom-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
 .classroom-list a,
 .member-list li {
   display: flex;
@@ -1638,8 +1892,26 @@ textarea:focus {
   align-items: center;
   text-decoration: none;
   color: inherit;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--mist);
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.classroom-list a:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 158, 219, 0.3);
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.member-list li {
+  border-bottom: none;
 }
 
 .member-row {
@@ -1719,7 +1991,13 @@ textarea:focus {
 .btn-ghost-dark {
   background: transparent;
   color: var(--navy);
-  border-color: var(--mist);
+  border-color: rgba(11, 31, 58, 0.14);
+}
+
+.btn-ghost-dark:hover:not(:disabled) {
+  border-color: rgba(0, 158, 219, 0.35);
+  color: var(--un-blue-deep);
+  background: rgba(0, 158, 219, 0.06);
 }
 
 .setup-steps {
