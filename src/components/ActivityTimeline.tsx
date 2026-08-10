@@ -31,13 +31,7 @@ export function ActivityTimeline({ events, stats, loading = false }: ActivityTim
   return (
     <section className="activity-strip" aria-label="Your activity">
       <div className="activity-strip-head">
-        <div>
-          <p className="activity-eyebrow">Your activity</p>
-          <h2>Where you’ve been on GoMUN</h2>
-          <p className="muted">
-            Rooms and classrooms you’ve hosted or joined — a living trail of your practice.
-          </p>
-        </div>
+        <h2 className="activity-heading">Your Activity</h2>
         <ul className="activity-usage-chips">
           <li>
             <strong>{stats.roomsHosted}</strong>
@@ -69,22 +63,37 @@ export function ActivityTimeline({ events, stats, loading = false }: ActivityTim
         <div className="activity-timeline-scroll">
           <ol className="activity-timeline">
             {events.map((event) => {
+              const name = event.detail?.trim();
               const body = (
                 <>
                   <span className={`activity-dot ${KIND_CLASS[event.kind]}`} aria-hidden="true" />
+                  {name ? (
+                    <span className="activity-hover-card" role="tooltip">
+                      {name}
+                    </span>
+                  ) : null}
                   <span className="activity-day">{formatActivityDay(event.at)}</span>
-                  <strong className="activity-title">{event.title}</strong>
-                  {event.detail ? <span className="activity-detail">{event.detail}</span> : null}
+                  <span className="activity-detail">{event.title}</span>
                 </>
               );
               return (
                 <li key={event.eventId || event.dedupeKey} className="activity-node">
                   {event.href ? (
-                    <Link className="activity-node-link" to={event.href}>
+                    <Link
+                      className="activity-node-link"
+                      to={event.href}
+                      aria-label={`${event.title}${name ? ` — ${name}` : ''}`}
+                    >
                       {body}
                     </Link>
                   ) : (
-                    <div className="activity-node-link">{body}</div>
+                    <div
+                      className="activity-node-link"
+                      tabIndex={0}
+                      aria-label={`${event.title}${name ? ` — ${name}` : ''}`}
+                    >
+                      {body}
+                    </div>
                   )}
                 </li>
               );

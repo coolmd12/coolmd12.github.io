@@ -112,8 +112,8 @@ export function streamParticipants(
 }
 
 /**
- * Live list of open committee rooms this user hosted and/or joined.
- * Closed rooms are omitted. Survives refresh (unlike the old dashboard banner).
+ * Live list of committee rooms this user hosted and/or joined (including closed/past).
+ * Survives refresh. Callers can split live vs past with isRoomClosed().
  */
 export function streamMyCommitteeRooms(
   userId: string,
@@ -136,7 +136,6 @@ export function streamMyCommitteeRooms(
     const roomsById = new Map<string, Room>();
 
     for (const room of hosted) {
-      if (isRoomClosed(room)) continue;
       roomsById.set(room.roomId, room);
       relations.set(room.roomId, mergeCommitteeRoomRelation(relations.get(room.roomId), 'hosted'));
     }
@@ -149,7 +148,7 @@ export function streamMyCommitteeRooms(
         room = (await getRoom(roomId)) ?? undefined;
         if (room) joinedCache.set(roomId, room);
       }
-      if (room && !isRoomClosed(room)) {
+      if (room) {
         roomsById.set(roomId, room);
       }
     }
@@ -159,10 +158,17 @@ export function streamMyCommitteeRooms(
     const list: MyCommitteeRoom[] = [];
     for (const [roomId, relation] of relations) {
       const room = roomsById.get(roomId);
-      if (!room || isRoomClosed(room)) continue;
+      if (!room) continue;
       list.push({ ...room, relation });
     }
-    list.sort((a, b) => b.createdAt - a.createdAt);
+    list.sort((a, b) => {
+      const aClosed = isRoomClosed(a) ? 1 : 0;
+      const bClosed = isRoomClosed(b) ? 1 : 0;
+      if (aClosed !== bClosed) return aClosed - bClosed;
+      const aAt = a.closedAt || a.createdAt;
+      const bAt = b.closedAt || b.createdAt;
+      return bAt - aAt;
+    });
     callback(list);
   };
 

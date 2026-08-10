@@ -10,6 +10,7 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import type { ActivityEvent, ActivityKind, ActivityUsageStats } from '../types/activity';
 import type { Classroom, UserProfile } from '../types';
+import { isRoomClosed } from './committeeRoomLogic';
 import type { MyCommitteeRoom } from './rooms';
 
 function requireDb() {
@@ -100,7 +101,6 @@ export function backfillActivityEvents(input: {
       eventId: dedupeKey,
       kind: 'account_created',
       title: 'Joined GoMUN',
-      detail: 'Account created',
       at: profile.createdAt,
       dedupeKey,
     });
@@ -127,6 +127,18 @@ export function backfillActivityEvents(input: {
         title: 'Joined a committee room',
         detail: room.name,
         at: room.createdAt,
+        href: `/room/${room.roomId}`,
+        dedupeKey,
+      });
+    }
+    if (isRoomClosed(room) && room.closedAt) {
+      const dedupeKey = activityDedupeKey('room_closed', room.roomId);
+      events.push({
+        eventId: dedupeKey,
+        kind: 'room_closed',
+        title: 'Closed a committee room',
+        detail: room.name,
+        at: room.closedAt,
         href: `/room/${room.roomId}`,
         dedupeKey,
       });
