@@ -1,0 +1,182 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+} from 'firebase/firestore';
+import { db, isFirebaseConfigured } from '../lib/firebase';
+import type { ActivityEvent, ActivityKind, ActivityUsageStats } from '../types/activity';
+import type { Classroom, UserProfile } from '../types';
+import type { MyCommitteeRoom } from './rooms';
+
+function requireDb() {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured.');
+  }
+  return db;
+}
+
+function sanitizeId(raw: string): string {
+  return raw.replace(/[^\w.-]+/g, '_').slice(0, 120);
+}
+
+export function activityDedupeKey(kind: ActivityKind, subjectId: string): string {
+  return sanitizeId(`${kind}_${subjectId}`);
+}
+
+/** Best-effort append; never throws to callers of classroom/room flows. */
+export async function logActivity(
+  uid: string,
+  input: {
+    kind: ActivityKind;
+    title: string;
+    detail?: string;
+    at?: number;
+    href?: string;
+    subjectId: string;
+  },
+): Promise<void> {
+  try {
+    if (!isFirebaseConfigured || !db) return;
+    const dedupeKey = activityDedupeKey(input.kind, input.subjectId);
+    const ref = doc(db, 'users', uid, 'activity', dedupeKey);
+    const event: Omit<ActivityEvent, 'eventId'> = {
+      kind: input.kind,
+      title: input.title,
+      at: input.at ?? Date.now(),
+      dedupeKey,
+      ...(input.detail ? { detail: input.detail } : {}),
+      ...(input.href ? { href: input.href } : {}),
+    };
+    await setDoc(ref, event, { merge: true });
+  } catch (err) {
+    console.warn('Activity log failed', err);
+  }
+}
+
+export function streamActivityLog(
+  uid: string,
+  callback: (events: ActivityEvent[]) => void,
+): () => void {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  const q = query(collection(db, 'users', uid, 'activity'), orderBy('at', 'desc'));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const events = snap.docs.map(
+        (d) => ({ ...d.data(), eventId: d.id }) as ActivityEvent,
+      );
+      callback(events);
+    },
+    () => callback([]),
+  );
+}
+
+export async function listActivityLog(uid: string): Promise<ActivityEvent[]> {
+  const database = requireDb();
+  const q = query(collection(database, 'users', uid, 'activity'), orderBy('at', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ ...d.data(), eventId: d.id }) as ActivityEvent);
+}
+
+/** Build timeline events from profile + rooms + classrooms already on the client. */
+export function backfillActivityEvents(input: {
+  profile: UserProfile;
+  rooms: MyCommitteeRoom[];
+  classrooms: Classroom[];
+}): ActivityEvent[] {
+  const events: ActivityEvent[] = [];
+  const { profile, rooms, classrooms } = input;
+
+  if (profile.createdAt) {
+    const dedupeKey = activityDedupeKey('account_created', profile.uid);
+    events.push({
+      eventId: dedupeKey,
+      kind: 'account_created',
+      title: 'Joined GoMUN',
+      detail: 'Account created',
+      at: profile.createdAt,
+      dedupeKey,
+    });
+  }
+
+  for (const room of rooms) {
+    if (room.relation === 'hosted' || room.relation === 'both') {
+      const dedupeKey = activityDedupeKey('room_created', room.roomId);
+      events.push({
+        eventId: dedupeKey,
+        kind: 'room_created',
+        title: 'Hosted a committee room',
+        detail: room.name,
+        at: room.createdAt,
+        href: `/room/${room.roomId}`,
+        dedupeKey,
+      });
+    }
+    if (room.relation === 'joined' || room.relation === 'both') {
+      const dedupeKey = activityDedupeKey('room_joined', room.roomId);
+      events.push({
+        eventId: dedupeKey,
+        kind: 'room_joined',
+        title: 'Joined a committee room',
+        detail: room.name,
+        at: room.createdAt,
+        href: `/room/${room.roomId}`,
+        dedupeKey,
+      });
+    }
+  }
+
+  for (const classroom of classrooms) {
+    const isHost = classroom.teacherId === profile.uid;
+    const kind: ActivityKind = isHost ? 'classroom_created' : 'classroom_joined';
+    const dedupeKey = activityDedupeKey(kind, classroom.id);
+    events.push({
+      eventId: dedupeKey,
+      kind,
+      title: isHost ? 'Created a classroom' : 'Joined a classroom',
+      detail: classroom.name,
+      at: classroom.createdAt,
+      href: `/classroom/${classroom.id}`,
+      dedupeKey,
+    });
+  }
+
+  return events;
+}
+
+export function mergeActivityEvents(
+  live: ActivityEvent[],
+  backfill: ActivityEvent[],
+): ActivityEvent[] {
+  const byKey = new Map<string, ActivityEvent>();
+  for (const event of [...backfill, ...live]) {
+    const key = event.dedupeKey || event.eventId;
+    const prev = byKey.get(key);
+    if (!prev || event.at >= prev.at) {
+      byKey.set(key, { ...event, dedupeKey: key, eventId: event.eventId || key });
+    }
+  }
+  return [...byKey.values()].sort((a, b) => a.at - b.at);
+}
+
+export function computeActivityUsage(
+  events: ActivityEvent[],
+  rooms: MyCommitteeRoom[],
+  classrooms: Classroom[],
+): ActivityUsageStats {
+  const roomsHosted = rooms.filter((r) => r.relation === 'hosted' || r.relation === 'both').length;
+  const roomsJoined = rooms.filter((r) => r.relation === 'joined' || r.relation === 'both').length;
+  return {
+    roomsHosted,
+    roomsJoined,
+    classrooms: classrooms.length,
+    totalEvents: events.length,
+  };
+}

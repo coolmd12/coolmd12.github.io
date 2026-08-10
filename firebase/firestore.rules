@@ -76,6 +76,23 @@ service cloud.firestore {
           || validUsername(request.resource.data.username)
         );
       allow delete: if false;
+
+      // Own activity timeline (append-only). Parent read of linked students is future work.
+      match /activity/{eventId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.keys().hasAll(['kind', 'title', 'at', 'dedupeKey'])
+          && request.resource.data.kind is string
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.at is int
+          && request.resource.data.dedupeKey is string;
+        allow update: if isSelf(userId)
+          && request.resource.data.dedupeKey == resource.data.dedupeKey
+          && request.resource.data.kind == resource.data.kind;
+        allow delete: if false;
+      }
     }
 
     match /usernames/{username} {
@@ -173,6 +190,11 @@ service cloud.firestore {
       return signedIn() && roomDoc(roomId).createdBy == request.auth.uid;
     }
 
+    function isRoomParticipant(roomId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/rooms/$(roomId)/participants/$(request.auth.uid));
+    }
+
     match /rooms/{roomId} {
       allow read: if signedIn();
       allow create: if signedIn()
@@ -187,6 +209,15 @@ service cloud.firestore {
         && request.resource.data.speakerQueue is list;
       allow update: if signedIn() && (
         isRoomChair(roomId)
+        // Host may close the room (and clear live floor fields) even if not seated as chair.
+        || (
+          isRoomCreator(roomId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'closedAt', 'closedBy', 'currentStatus',
+              'activeTimer', 'activeCaucus', 'activeMotionId', 'speechTimeBank'
+            ])
+        )
         // Claim vacant chair seat on join (transaction pairs with participant create).
         || (
           resource.data.chairId == ''
@@ -228,13 +259,31 @@ service cloud.firestore {
       }
 
       match /messages/{messageId} {
-        allow read: if signedIn();
-        allow create: if signedIn()
+        // Only people who joined this room can read/send its chat.
+        allow read: if isRoomParticipant(roomId);
+        allow create: if isRoomParticipant(roomId)
           && request.resource.data.userId == request.auth.uid
+          && request.resource.data.keys().hasAll([
+            'userId', 'displayName', 'text', 'createdAt'
+          ])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() > 0
+          && request.resource.data.displayName.size() <= 120
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 1000;
-        allow update, delete: if false;
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt is int;
+        // Seat-label sync after role/country change (own messages only).
+        allow update: if isRoomParticipant(roomId)
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.text == resource.data.text
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName'])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() > 0
+          && request.resource.data.displayName.size() <= 120;
+        allow delete: if false;
       }
     }
 

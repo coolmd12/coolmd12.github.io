@@ -5,7 +5,10 @@ import {
   buildSpeakerQueue,
   formatSeatLabel,
   formatTimerClock,
+  isRoomClosed,
+  normalizeChatText,
   remainingTimerSeconds,
+  resolveChatLabel,
   seatDisplayName,
   tallyVotes,
 } from './committeeRoomLogic';
@@ -94,6 +97,8 @@ describe('buildCommitteeRoomDraft', () => {
       speechTimeBank: { totalUnusedSeconds: 0, entries: [] },
       activeMotionId: null,
       activeTimer: null,
+      closedAt: null,
+      closedBy: null,
       settings: { defaultSpeakerTime: 60, votingDuration: 60 },
     });
   });
@@ -153,5 +158,40 @@ describe('timer helpers', () => {
         status: 'running',
       }, 1_000 + 15_000),
     ).toBe(45);
+  });
+});
+
+describe('chat helpers', () => {
+  it('normalizes chat text', () => {
+    expect(normalizeChatText('  hello  ')).toBe('hello');
+    expect(() => normalizeChatText('   ')).toThrow(/empty/i);
+    expect(() => normalizeChatText('x'.repeat(1001))).toThrow(/too many characters/i);
+  });
+
+  it('resolves live seat labels then falls back', () => {
+    const participants = [
+      {
+        userId: 'u1',
+        displayName: 'USA',
+        role: 'delegate' as const,
+        country: 'USA',
+        raisedPlacard: false,
+        joinedAt: 1,
+      },
+    ];
+    expect(
+      resolveChatLabel({ userId: 'u1', displayName: 'Delegate · France' }, participants),
+    ).toBe('Delegate · USA');
+    expect(
+      resolveChatLabel({ userId: 'gone', displayName: 'Chair · Sam' }, participants),
+    ).toBe('Chair · Sam');
+  });
+});
+
+describe('room closed helper', () => {
+  it('treats missing closedAt as open', () => {
+    expect(isRoomClosed({ closedAt: null })).toBe(false);
+    expect(isRoomClosed({ closedAt: undefined })).toBe(false);
+    expect(isRoomClosed({ closedAt: Date.now() })).toBe(true);
   });
 });

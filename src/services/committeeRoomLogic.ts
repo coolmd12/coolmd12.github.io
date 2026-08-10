@@ -2,6 +2,7 @@ import type {
   Motion,
   Participant,
   Room,
+  RoomMessage,
   RoomTimer,
   SessionRole,
   SpeakerQueueEntry,
@@ -36,6 +37,45 @@ export function buildSpeakerQueue(
 export function formatSeatLabel(role: SessionRole, displayName: string): string {
   const prefix = role === 'chair' ? 'Chair' : 'Delegate';
   return `${prefix} · ${displayName.trim()}`;
+}
+
+export function isRoomClosed(room: Pick<Room, 'closedAt'> | null | undefined): boolean {
+  return room != null && room.closedAt != null && room.closedAt > 0;
+}
+
+export type CommitteeRoomRelation = 'hosted' | 'joined' | 'both';
+
+export function mergeCommitteeRoomRelation(
+  current: CommitteeRoomRelation | undefined,
+  next: 'hosted' | 'joined',
+): CommitteeRoomRelation {
+  if (!current) return next;
+  if (current === next) return current;
+  return 'both';
+}
+
+/** Prefer live seat label while the sender is still in the room; else stored fallback. */
+export function resolveChatLabel(
+  message: Pick<RoomMessage, 'userId' | 'displayName'>,
+  participants: Participant[],
+): string {
+  const person = participants.find((p) => p.userId === message.userId);
+  if (person) return formatSeatLabel(person.role, person.displayName);
+  return message.displayName;
+}
+
+/** Trim + length-check chat text before write (Firestore max 1000). */
+export const CHAT_MAX_CHARS = 1000;
+
+export function normalizeChatText(raw: string): string {
+  const text = raw.trim();
+  if (!text) throw new Error('Message cannot be empty.');
+  if (text.length > CHAT_MAX_CHARS) {
+    throw new Error(
+      `You have too many characters. The limit is ${CHAT_MAX_CHARS} characters per message.`,
+    );
+  }
+  return text;
 }
 
 export function seatDisplayName(input: {
@@ -76,6 +116,8 @@ export function buildCommitteeRoomDraft(input: {
     speechTimeBank: { totalUnusedSeconds: 0, entries: [] },
     activeMotionId: null,
     activeTimer: null,
+    closedAt: null,
+    closedBy: null,
   };
 }
 

@@ -2,12 +2,15 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  collectionGroup,
   doc,
   getDoc,
   onSnapshot,
+  query,
   runTransaction,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import type {
@@ -19,7 +22,19 @@ import type {
   SpeechTimeBank,
   SpeechTimeBankEntry,
 } from '../types/committee';
-import { buildParticipantDraft, buildSpeakerTimer, remainingTimerSeconds } from './committeeRoomLogic';
+import {
+  buildParticipantDraft,
+  buildSpeakerTimer,
+  formatSeatLabel,
+  isRoomClosed,
+  mergeCommitteeRoomRelation,
+  remainingTimerSeconds,
+  type CommitteeRoomRelation,
+} from './committeeRoomLogic';
+import { logActivity } from './activity';
+import { syncMessageLabelsForUser } from './messages';
+
+export type MyCommitteeRoom = Room & { relation: CommitteeRoomRelation };
 
 function requireDb() {
   if (!isFirebaseConfigured || !db) {
@@ -96,11 +111,142 @@ export function streamParticipants(
   });
 }
 
+/**
+ * Live list of open committee rooms this user hosted and/or joined.
+ * Closed rooms are omitted. Survives refresh (unlike the old dashboard banner).
+ */
+export function streamMyCommitteeRooms(
+  userId: string,
+  callback: (rooms: MyCommitteeRoom[]) => void,
+): () => void {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+
+  let hosted: Room[] = [];
+  let joinedIds: string[] = [];
+  const joinedCache = new Map<string, Room>();
+  let generation = 0;
+  let cancelled = false;
+
+  const emit = async () => {
+    const myGen = ++generation;
+    const relations = new Map<string, CommitteeRoomRelation>();
+    const roomsById = new Map<string, Room>();
+
+    for (const room of hosted) {
+      if (isRoomClosed(room)) continue;
+      roomsById.set(room.roomId, room);
+      relations.set(room.roomId, mergeCommitteeRoomRelation(relations.get(room.roomId), 'hosted'));
+    }
+
+    for (const roomId of joinedIds) {
+      relations.set(roomId, mergeCommitteeRoomRelation(relations.get(roomId), 'joined'));
+      if (roomsById.has(roomId)) continue;
+      let room = joinedCache.get(roomId);
+      if (!room) {
+        room = (await getRoom(roomId)) ?? undefined;
+        if (room) joinedCache.set(roomId, room);
+      }
+      if (room && !isRoomClosed(room)) {
+        roomsById.set(roomId, room);
+      }
+    }
+
+    if (cancelled || myGen !== generation) return;
+
+    const list: MyCommitteeRoom[] = [];
+    for (const [roomId, relation] of relations) {
+      const room = roomsById.get(roomId);
+      if (!room || isRoomClosed(room)) continue;
+      list.push({ ...room, relation });
+    }
+    list.sort((a, b) => b.createdAt - a.createdAt);
+    callback(list);
+  };
+
+  const unsubHosted = onSnapshot(
+    query(collection(db, 'rooms'), where('createdBy', '==', userId)),
+    (snapshot) => {
+      hosted = snapshot.docs.map((d) => ({ ...d.data(), roomId: d.id }) as Room);
+      void emit();
+    },
+    () => {
+      hosted = [];
+      void emit();
+    },
+  );
+
+  const unsubJoined = onSnapshot(
+    query(collectionGroup(db, 'participants'), where('userId', '==', userId)),
+    (snapshot) => {
+      joinedIds = snapshot.docs
+        .map((d) => d.ref.parent.parent?.id)
+        .filter((id): id is string => Boolean(id));
+      for (const id of [...joinedCache.keys()]) {
+        if (!joinedIds.includes(id)) joinedCache.delete(id);
+      }
+      void emit();
+    },
+    () => {
+      joinedIds = [];
+      void emit();
+    },
+  );
+
+  return () => {
+    cancelled = true;
+    unsubHosted();
+    unsubJoined();
+  };
+}
+
+/** Host or chair closes a room — drops it from live lists; link shows closed. */
+export async function closeRoom(roomId: string, byUserId: string): Promise<void> {
+  const database = requireDb();
+  const roomRef = doc(database, 'rooms', roomId);
+  let roomName = 'Committee room';
+  await runTransaction(database, async (tx) => {
+    const snap = await tx.get(roomRef);
+    if (!snap.exists()) throw new Error('Room not found.');
+    const room = snap.data() as Omit<Room, 'roomId'>;
+    roomName = room.name || roomName;
+    if (room.createdBy !== byUserId && room.chairId !== byUserId) {
+      throw new Error('Only the host or chair can close this room.');
+    }
+    if (isRoomClosed(room)) return;
+    tx.update(roomRef, {
+      closedAt: Date.now(),
+      closedBy: byUserId,
+      currentStatus: 'recess',
+      activeCaucus: null,
+      activeMotionId: null,
+      ...bankPatchFromTimer(room, 'Room closed'),
+    });
+  });
+  void logActivity(byUserId, {
+    kind: 'room_closed',
+    title: 'Closed a committee room',
+    detail: roomName,
+    subjectId: roomId,
+  });
+}
+
 export async function createRoom(roomData: Omit<Room, 'roomId'>): Promise<Room | null> {
   const database = requireDb();
   const roomRef = doc(collection(database, 'rooms'));
   await setDoc(roomRef, roomData);
-  return { ...roomData, roomId: roomRef.id };
+  const room = { ...roomData, roomId: roomRef.id };
+  void logActivity(roomData.createdBy, {
+    kind: 'room_created',
+    title: 'Hosted a committee room',
+    detail: roomData.name,
+    subjectId: room.roomId,
+    href: `/room/${room.roomId}`,
+    at: roomData.createdAt,
+  });
+  return room;
 }
 
 export async function joinRoom(input: {
@@ -115,6 +261,8 @@ export async function joinRoom(input: {
   const roomRef = doc(database, 'rooms', input.roomId);
   const participantRef = doc(database, 'rooms', input.roomId, 'participants', input.userId);
   const participant = buildParticipantDraft(input);
+  let roomName = 'Committee room';
+  let wasNew = false;
 
   await runTransaction(database, async (tx) => {
     const roomSnap = await tx.get(roomRef);
@@ -122,6 +270,10 @@ export async function joinRoom(input: {
       throw new Error('Room not found.');
     }
     const room = roomSnap.data() as Omit<Room, 'roomId'>;
+    roomName = room.name || roomName;
+    if (isRoomClosed(room)) {
+      throw new Error('This room has been closed by the host.');
+    }
     const existing = await tx.get(participantRef);
 
     if (input.role === 'chair') {
@@ -142,9 +294,20 @@ export async function joinRoom(input: {
         raisedPlacard: false,
       });
     } else {
+      wasNew = true;
       tx.set(participantRef, participant);
     }
   });
+
+  if (wasNew) {
+    void logActivity(input.userId, {
+      kind: 'room_joined',
+      title: 'Joined a committee room',
+      detail: roomName,
+      subjectId: input.roomId,
+      href: `/room/${input.roomId}`,
+    });
+  }
 
   return participant;
 }
@@ -193,6 +356,12 @@ export async function updateSeat(input: {
       country: next.country ?? null,
     });
   });
+
+  await syncMessageLabelsForUser(
+    input.roomId,
+    input.userId,
+    formatSeatLabel(next.role, next.displayName),
+  );
 }
 
 export async function setPlacard(roomId: string, userId: string, raised: boolean): Promise<void> {
@@ -323,13 +492,42 @@ export async function clearSpeakerTimer(
 }
 
 /** Chair strikes the gavel — synced so every client can play one tap. */
-export async function strikeGavel(roomId: string, byUserId: string): Promise<void> {
+export async function strikeGavel(roomId: string, byUserId: string): Promise<number> {
   const database = requireDb();
+  const at = Date.now();
   await updateDoc(doc(database, 'rooms', roomId), {
     lastGavel: {
-      taps: 1,
-      at: Date.now(),
+      taps: 1 as const,
+      at,
       byUserId,
     },
+  });
+  return at;
+}
+
+/** Chair start / stop session (open debate vs recess). */
+export async function setRoomSessionStatus(
+  roomId: string,
+  status: 'open' | 'recess',
+): Promise<void> {
+  const database = requireDb();
+  const roomRef = doc(database, 'rooms', roomId);
+  await runTransaction(database, async (tx) => {
+    const snap = await tx.get(roomRef);
+    if (!snap.exists()) throw new Error('Room not found.');
+    const room = snap.data() as Omit<Room, 'roomId'>;
+    if (status === 'recess') {
+      tx.update(roomRef, {
+        currentStatus: 'recess',
+        activeCaucus: null,
+        activeMotionId: null,
+        ...bankPatchFromTimer(room, 'Session ended'),
+      });
+      return;
+    }
+    tx.update(roomRef, {
+      currentStatus: 'open',
+      activeCaucus: null,
+    });
   });
 }
