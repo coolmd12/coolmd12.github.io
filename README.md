@@ -18,19 +18,20 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 | Feature | Status |
 | --- | --- |
-| Email/password accounts | Done |
-| Email verification **code** + Discord-style **username** | Done (Phase 1.7) |
+| **Continue with Google** accounts | Done — primary signup / login |
+| Discord-style **username** + display name + roles | Done |
 | Private classrooms + invite codes | Done |
 | Post-signup optional customize (school; Skip OK) | Done |
 | Profile (display name, school, avatar initials) | Done |
 | Conference directory (links to real organizers) | Done (basic) |
 | Polished signup / login layouts | Done |
-| Early “email already registered” check on signup step 1 | Done (`emails/` + Auth lookup) |
 | Role-aware UI (signed out vs student vs teacher) | Done (Phase 1.6) |
 | **Multi-role accounts** (student **and** teacher) | Done (Phase 1.6 — `roles[]`) |
+| Founder **Founder's Stats** (`/admin` — `dhyanvim@gmail.com` only) | Done |
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
+| Email/password + Resend verification codes | Parked — not in UI (needs paid/verified sending domain) |
 | Parent / guardian accounts | Later |
-| Live committee room (speakers, motions, timers) | Next (Phase 2) — procedure floor; early scaffolding started |
+| Live committee room (speakers, motions, timers) | Phase 2 — core floor done; chat + polish still open |
 | AI practice + prep Q&A assistant (Gemini) | Later (Phase 3) |
 | RoP cheat sheets · resolution / position-paper tools · prep notes | Later (Phase 5) |
 | **In-app calling** (voice / video inside rooms) | Later (Phase 6) — Meet/Zoom links until then |
@@ -46,11 +47,12 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 ## How a user flows through the app
 
-1. **Sign up** — email (rejects if already registered) → **6-digit verification code** → GoMUN password + unique **username** + **display name** + capabilities (student and/or teacher)
-2. **Welcome** — optional school/club only (or **Skip**); username + display name already set; avatars use **initials**
-3. **Dashboard** — teachers create classrooms; anyone can join with an invite code; dual-role users see both
-4. **Classroom** — members list, invite sharing (owner), optional Meet/Zoom links
-5. **Practice / Conferences / Profile** — explore modes, find real MUNs, edit profile anytime
+1. **Sign up / log in** — **Continue with Google** (any Google / Gmail account)
+2. **Finish account** (new users) — unique **username** + **display name** + capabilities (student and/or teacher)
+3. **Welcome** — optional school/club only (or **Skip**); avatars use **initials**
+4. **Dashboard** — teachers create classrooms; anyone can join with an invite code; dual-role users see both
+5. **Classroom** — members list, invite sharing (owner), optional Meet/Zoom links
+6. **Rooms / Practice / Conferences / Profile** — open committee floors, explore modes, find real MUNs, edit profile anytime
 
 Signed-in users see Dashboard CTAs instead of Sign up on the home page.
 
@@ -60,33 +62,32 @@ Signed-in users see Dashboard CTAs instead of Sign up on the home page.
 | --- | --- |
 | Account `roles[]` | Site-wide capabilities (student, teacher, or both) |
 | Classroom membership | What you are **in that room** (joiners default to student; owner is `teacherId`) |
-| Session labels | Chair / observer later (Phase 2) |
+| Session labels | Chair / delegate chosen when joining a live room |
 
 See [ROADMAP.md](./ROADMAP.md) § multi-role.
 
-### Account security (Discord-style)
+### Account security
 
 | Field | Required? | Notes |
 | --- | --- | --- |
-| Email | Yes | **6-digit code** before the Auth account is created; step 1 blocks emails already in use |
-| GoMUN password | Yes | One site password — never the user’s Gmail/Outlook password |
+| Google account | Yes | Firebase **Google** sign-in; Google proves email ownership (no Resend domain needed) |
 | Username | Yes | Unique `@handle`; **locked** after signup |
 | Display name | Yes | Shown in rooms; editable later |
-| Capabilities | Yes | Student and/or teacher at signup; parent / guardian later |
+| Capabilities | Yes | Student and/or teacher at onboarding; parent / guardian later |
 | School | Optional | Welcome or Profile; Skip OK |
 | Photo | Paused | Initials only until Firebase Storage (Blaze) is acceptable |
 
-Email codes: **Resend** + **Cloudflare Worker** (`workers/email-verification/`). Never put `RESEND_API_KEY` in `VITE_*` env.
+**User count:** only `dhyanvim@gmail.com` sees **Founder's Stats** in the nav (`/admin`). Exact Auth list: Firebase Console → Authentication → Users.
 
 ***
 
 ## Stack
 
 - **Frontend:** React + TypeScript + Vite (dev server locked to port **5173**)
-- **Auth / data:** Firebase Auth + Cloud Firestore (Spark / free tier)
-- **Email codes:** Resend + Cloudflare Worker (no Firebase Blaze required for mail)
+- **Auth / data:** Firebase Auth (**Google**) + Cloud Firestore (Spark / free tier)
 - **Photos:** paused — initials avatars (Storage needs Blaze)
 - **Hosting:** GitHub Pages (`dist/` via GitHub Actions)
+- **Email codes (parked):** Resend + Cloudflare Worker still in `workers/email-verification/` if we revive email signup later
 
 ***
 
@@ -95,17 +96,17 @@ Email codes: **Resend** + **Cloudflare Worker** (`workers/email-verification/`).
 1. `npm install`
 2. Copy `.env.example` → `.env.local` and fill:
    - Firebase web config (`VITE_FIREBASE_*`)
-   - `VITE_EMAIL_VERIFY_URL` (Worker URL, no trailing slash)
+   - Optional: nothing else required for auth beyond Google + Firestore rules
 3. Firebase Console:
-   - Enable **Email/Password** auth
+   - Enable **Google** under Authentication → Sign-in method (set a support email)
+   - Authorized domains: `localhost` + `coolmd12.github.io`
    - Create **Firestore**
-   - Publish rules from `firebase/firestore.rules`
-4. Deploy email Worker — see `workers/email-verification/README.md`
-5. `npm run dev` → <http://localhost:5173>
+   - Publish rules from `firebase/firestore.rules` (includes `stats/` for user count)
+4. `npm run dev` → <http://localhost:5173>
 
 In-app checklist: `/setup`.
 
-**Tip:** teacher + student accounts (incognito) to test create + join.
+**Tip:** two Google accounts (or normal + incognito) to test create + join rooms.
 
 Do **not** commit `.env.local` or secrets.
 
@@ -126,11 +127,11 @@ Do **not** commit `.env.local` or secrets.
 
 | Path | Purpose |
 | --- | --- |
-| `src/pages/` | Screens (landing, auth, welcome, dashboard, …) |
-| `src/services/` | Auth, classrooms, email verification |
+| `src/pages/` | Screens (landing, auth, welcome, dashboard, rooms, admin, …) |
+| `src/services/` | Auth, classrooms, rooms, motions, stats |
 | `src/contexts/AuthContext.tsx` | Signed-in user + profile |
-| `workers/email-verification/` | Cloudflare Worker for signup codes |
-| `firebase/firestore.rules` | Users, usernames, classrooms |
+| `workers/email-verification/` | Parked Cloudflare Worker for email codes |
+| `firebase/firestore.rules` | Users, usernames, classrooms, rooms, stats |
 | `firebase/storage.rules` | Avatars (when Storage is enabled later) |
 | `OUTLINE.md` | Condensed README + roadmap |
 | `ROADMAP.md` | Full phased product plan |
@@ -175,8 +176,8 @@ Optional voice (then video) **inside** a live committee room so clubs don’t *h
 | [README.md](./README.md) | Setup + how the app works today |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
-**Next major build:** Phase 2 — live committee **procedure floor** (not in-app video yet).
+**Next major build:** finish Phase 2 polish (chat, chair/delegate UX), then Phase 3+.
 
-Note: A future centralized "Rooms" hub (for example `/rooms`) will host live committee rooms and, later, additional room types such as AI practice rooms and hybrid rooms (live + AI). These room types are planned to be free and integrated with classroom and dashboard flows.
+Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms (Phase 3) and hybrid rooms (live + AI). These room types are planned to be free and integrated with classroom and dashboard flows.
 
 **Far future (not scheduled):** Speech & Debate practice on the same site — same free / classroom-private spirit as MUN. See [ROADMAP.md](./ROADMAP.md) open ideas.

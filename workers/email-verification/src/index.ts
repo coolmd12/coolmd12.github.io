@@ -229,8 +229,21 @@ async function handleRequestCode(request: Request, env: Env, origin: string | nu
   if (!resend.ok) {
     const detail = await resend.text();
     console.error('Resend error', resend.status, detail);
+
+    let hint = `Resend HTTP ${resend.status}`;
+    try {
+      const parsed = JSON.parse(detail) as { message?: string; name?: string };
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        hint = parsed.message.trim();
+      } else if (detail.trim()) {
+        hint = detail.trim().slice(0, 240);
+      }
+    } catch {
+      if (detail.trim()) hint = detail.trim().slice(0, 240);
+    }
+
     return json(
-      { error: 'Could not send verification email. Check Resend domain / FROM_EMAIL.' },
+      { error: `Could not send verification email. ${hint}` },
       502,
       origin,
     );

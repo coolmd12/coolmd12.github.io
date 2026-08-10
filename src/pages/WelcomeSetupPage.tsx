@@ -101,7 +101,7 @@ export function WelcomeSetupPage() {
 
         {error ? <p className="banner error">{error}</p> : null}
 
-        <div className="locked-account-meta">
+        <div className="account-summary">
           <div>
             <span className="meta-label">Email</span>
             <strong>{current.email}</strong>
@@ -124,10 +124,7 @@ export function WelcomeSetupPage() {
           <div className="avatar avatar-lg" aria-hidden="true">
             <span>{initials}</span>
           </div>
-          <p className="muted profile-hint">
-            Profile photos are paused for now (no paid Firebase Storage). Your initials will show
-            in rooms.
-          </p>
+          <p className="muted profile-hint">Your initials appear in rooms and classrooms.</p>
         </div>
 
         <label>

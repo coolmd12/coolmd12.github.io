@@ -5,7 +5,7 @@ export type PracticeMode = 'live' | 'ai' | 'hybrid';
 export interface UserProfile {
   uid: string;
   email: string;
-  /** Discord-style unique handle; locked after signup. Missing on legacy accounts. */
+  /** Discord-style unique handle. Missing on legacy accounts until claimed. */
   username?: string;
   displayName: string;
   /** Primary role (legacy + display). Prefer `roles` for capabilities. */

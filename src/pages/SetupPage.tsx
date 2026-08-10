@@ -3,10 +3,10 @@ export function SetupPage() {
     <main className="shell setup-page">
       <header className="page-header">
         <div>
-          <h1>Firebase + email setup</h1>
+          <h1>Firebase + Google setup</h1>
           <p className="muted">
-            GoMUN uses Firebase Auth + Firestore on the free Spark plan, plus a Cloudflare
-            Worker + Resend for signup verification codes.
+            GoMUN uses Firebase Auth + Firestore on the free Spark plan. Accounts use{' '}
+            <strong>Continue with Google</strong> only (no paid domain / Resend required).
           </p>
         </div>
       </header>
@@ -19,24 +19,29 @@ export function SetupPage() {
           </a>{' '}
           (Spark / free).
         </li>
-        <li>Enable <strong>Email/Password</strong> under Authentication → Sign-in method.</li>
-        <li>Create a Firestore database in production mode, then deploy rules from <code>firebase/firestore.rules</code>.</li>
         <li>
-          Enable <strong>Storage</strong> (default bucket) for profile photos, then deploy rules
-          from <code>firebase/storage.rules</code>.
+          Enable <strong>Google</strong> under Authentication → Sign-in method. Set a support email
+          when prompted.
+        </li>
+        <li>
+          Under Authentication → Settings → Authorized domains, keep <code>localhost</code> and add{' '}
+          <code>coolmd12.github.io</code> if missing.
+        </li>
+        <li>
+          Create a Firestore database in production mode, then publish rules from{' '}
+          <code>firebase/firestore.rules</code> (includes the user-count <code>stats</code> doc).
         </li>
         <li>
           Register a Web app and copy config values into <code>.env.local</code> using{' '}
-          <code>.env.example</code> (include <code>VITE_FIREBASE_STORAGE_BUCKET</code>).
+          <code>.env.example</code>.
         </li>
         <li>
-          Deploy the email verification Worker (see <code>workers/email-verification/README.md</code>)
-          and set <code>VITE_EMAIL_VERIFY_URL</code> in <code>.env.local</code>. Never put{' '}
-          <code>RESEND_API_KEY</code> in <code>VITE_*</code> vars.
+          Run <code>npm run dev</code>, then <strong>Continue with Google</strong> on signup.
         </li>
         <li>
-          Run <code>npm run dev</code> and create a teacher account (email code → password +
-          username), then a classroom invite code for students.
+          Founder user count: log in as <code>dhyanvim@gmail.com</code> →{' '}
+          <strong>Founder&apos;s Stats</strong> in the nav (only that account). Or Firebase →
+          Authentication → Users for the exact Auth list.
         </li>
       </ol>
 
@@ -45,8 +50,7 @@ VITE_FIREBASE_AUTH_DOMAIN=...
 VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-VITE_EMAIL_VERIFY_URL=https://gomun-email-verify.<subdomain>.workers.dev`}</pre>
+VITE_FIREBASE_APP_ID=...`}</pre>
     </main>
   );
 }

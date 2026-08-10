@@ -1,42 +1,35 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
+import { needsProfileSetup, needsUsername } from '../types';
 
 export function LoginPage() {
-  const { login, user, configured, loading } = useAuth();
+  const { loginWithGoogle, user, profile, configured, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from || '/dashboard';
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (!loading && user) return <Navigate to={from} replace />;
+  if (!loading && user) {
+    const dest = needsUsername(profile)
+      ? '/choose-username'
+      : needsProfileSetup(profile)
+        ? '/welcome'
+        : from;
+    return <Navigate to={dest} replace />;
+  }
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function onGoogle() {
     setError('');
     setBusy(true);
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      await loginWithGoogle();
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      const code =
-        err && typeof err === 'object' && 'code' in err
-          ? String((err as { code: string }).code)
-          : '';
-      if (
-        code === 'auth/invalid-credential' ||
-        code === 'auth/wrong-password' ||
-        code === 'auth/user-not-found' ||
-        code === 'auth/invalid-email'
-      ) {
-        setError('Email or password is incorrect.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Could not log in.');
-      }
+      setError(err instanceof Error ? err.message : 'Could not log in with Google.');
     } finally {
       setBusy(false);
     }
@@ -46,10 +39,10 @@ export function LoginPage() {
     <main className="login-shell">
       <section className="login-side">
         <div className="login-card">
-          <p className="login-kicker">Welcome back</p>
+          <p className="login-kicker">Genuinely free</p>
           <h1>Log in to GoMUN</h1>
           <p className="login-lede">
-            Continue to your classrooms, practice rooms, and conference guides.
+            Use your Google account to open classrooms, practice rooms, and conference guides.
           </p>
 
           {!configured ? (
@@ -60,41 +53,15 @@ export function LoginPage() {
 
           {error ? <p className="banner error">{error}</p> : null}
 
-          <form className="login-form" onSubmit={(e) => void onSubmit(e)}>
-            <label>
-              Email
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ex: you@gmail.com"
-              />
-            </label>
-            <label>
-              GoMUN password
-              <input
-                type="password"
-                autoComplete="current-password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
-
-            <button
-              className="btn btn-primary btn-block"
-              type="submit"
-              disabled={busy || !configured}
-            >
-              {busy ? 'Logging in…' : 'Log in'}
-            </button>
-          </form>
+          <GoogleSignInButton
+            busy={busy}
+            disabled={!configured}
+            onClick={() => void onGoogle()}
+            label="Log in with Google"
+          />
 
           <p className="auth-switch">
-            New here? <Link to="/signup">Create an account</Link>
+            New here? <Link to="/signup">Sign up</Link>
           </p>
         </div>
       </section>
@@ -103,7 +70,7 @@ export function LoginPage() {
         <div className="login-stage-inner">
           <p className="login-stage-kicker">GoMUN Delegate Arena</p>
           <h2 className="login-stage-title">Ready for the next session?</h2>
-          <p className="login-stage-copy">Private classrooms. Real procedure. Always free.</p>
+          <p className="login-stage-copy">Private classrooms. Real procedure. Genuinely free.</p>
         </div>
       </section>
     </main>
