@@ -1,8 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { CommitteeRoomList } from '../components/CommitteeRoom/CommitteeRoomList';
 import { useAuth } from '../contexts/AuthContext';
-import { buildCommitteeRoomDraft } from '../services/committeeRoomLogic';
+import { buildCommitteeRoomDraft, isRoomClosed } from '../services/committeeRoomLogic';
 import {
   closeRoom,
   createRoom,
@@ -19,6 +19,15 @@ export default function RoomsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+
+  const liveRooms = useMemo(
+    () => committeeRooms.filter((r) => !isRoomClosed(r)),
+    [committeeRooms],
+  );
+  const pastRooms = useMemo(
+    () => committeeRooms.filter((r) => isRoomClosed(r)),
+    [committeeRooms],
+  );
 
   useEffect(() => {
     if (!profile?.uid) {
@@ -104,17 +113,33 @@ export default function RoomsPage() {
       ) : (
         <section className="dash-grid">
           <div className="panel">
-            <h2>Your rooms</h2>
-            <p className="muted">Hosted and joined — survives refresh. Recess ≠ closed.</p>
-            {profile ? (
-              <CommitteeRoomList
-                rooms={committeeRooms}
-                userId={profile.uid}
-                loading={roomsLoading}
-                busy={busy}
-                onCloseRoom={(id) => void onCloseCommitteeRoom(id)}
-              />
-            ) : null}
+            <div className="rooms-section">
+              <h2>Your rooms</h2>
+              <p className="muted">Live rooms first; past (closed) rooms below.</p>
+              {profile ? (
+                <CommitteeRoomList
+                  rooms={liveRooms}
+                  userId={profile.uid}
+                  loading={roomsLoading}
+                  busy={busy}
+                  onCloseRoom={(id) => void onCloseCommitteeRoom(id)}
+                />
+              ) : null}
+            </div>
+            <div className="rooms-section">
+              <h2>Past rooms</h2>
+              <p className="muted">Closed sessions you’ve hosted or joined.</p>
+              {profile ? (
+                <CommitteeRoomList
+                  rooms={pastRooms}
+                  userId={profile.uid}
+                  loading={roomsLoading}
+                  busy={busy}
+                  past
+                  emptyMessage="No past rooms yet."
+                />
+              ) : null}
+            </div>
           </div>
 
           <form className="panel" onSubmit={(e) => void onCreateCommitteeRoom(e)}>

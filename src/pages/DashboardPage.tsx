@@ -22,6 +22,7 @@ import {
   streamMyCommitteeRooms,
   type MyCommitteeRoom,
 } from '../services/rooms';
+import { isRoomClosed } from '../services/committeeRoomLogic';
 import type { ActivityEvent } from '../types/activity';
 import { canTeach, type Classroom } from '../types';
 
@@ -61,6 +62,15 @@ export function DashboardPage() {
   const activityStats = useMemo(
     () => computeActivityUsage(activityEvents, committeeRooms, classrooms),
     [activityEvents, committeeRooms, classrooms],
+  );
+
+  const liveRooms = useMemo(
+    () => committeeRooms.filter((r) => !isRoomClosed(r)),
+    [committeeRooms],
+  );
+  const pastRooms = useMemo(
+    () => committeeRooms.filter((r) => isRoomClosed(r)),
+    [committeeRooms],
   );
 
   useEffect(() => {
@@ -262,21 +272,36 @@ export function DashboardPage() {
 
       <section className="dash-grid">
         <div className="panel">
-          <h2>Your committee rooms</h2>
-          <p className="muted">
-            Hosted and joined live rooms stay here after refresh until the host or chair closes
-            them. Recess is not the same as closing.
-          </p>
-          {profile ? (
-            <CommitteeRoomList
-              rooms={committeeRooms}
-              userId={profile.uid}
-              loading={roomsLoading}
-              busy={busy}
-              onCloseRoom={(id) => void onCloseCommitteeRoom(id)}
-            />
-          ) : null}
-          <p style={{ marginTop: '0.75rem' }}>
+          <div className="rooms-section">
+            <h2>Your committee rooms</h2>
+            <p className="muted">
+              Live rooms stay here until closed. Past rooms are listed below after you close them.
+            </p>
+            {profile ? (
+              <CommitteeRoomList
+                rooms={liveRooms}
+                userId={profile.uid}
+                loading={roomsLoading}
+                busy={busy}
+                onCloseRoom={(id) => void onCloseCommitteeRoom(id)}
+              />
+            ) : null}
+          </div>
+          <div className="rooms-section">
+            <h2>Past rooms</h2>
+            <p className="muted">Closed sessions you’ve hosted or joined.</p>
+            {profile ? (
+              <CommitteeRoomList
+                rooms={pastRooms}
+                userId={profile.uid}
+                loading={roomsLoading}
+                busy={busy}
+                past
+                emptyMessage="No past rooms yet. When you close a live room, it shows up here."
+              />
+            ) : null}
+          </div>
+          <p className="panel-footer-link">
             <Link to="/rooms">Open rooms hub</Link>
           </p>
         </div>

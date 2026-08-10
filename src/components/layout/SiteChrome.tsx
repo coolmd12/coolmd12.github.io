@@ -51,6 +51,7 @@ export function SiteHeader() {
           <NavLink to="/" end>
             Home
           </NavLink>
+          {user ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
           <NavLink to="/conferences">Conferences</NavLink>
           <NavLink to="/practice">Practice</NavLink>
           <NavLink
@@ -64,7 +65,6 @@ export function SiteHeader() {
           >
             Rooms
           </NavLink>
-          {user ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
           {showFounderStats ? <NavLink to="/admin">Founder&apos;s Stats</NavLink> : null}
         </nav>
 
