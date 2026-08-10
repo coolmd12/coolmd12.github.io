@@ -27,7 +27,7 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 | **Teacher** | Create classroom, share invite, chair later |
 | **Student** | Join with code, practice |
 | **Both** | Same account can teach one room and join another as a delegate |
-| **Parent / guardian** | Later — not built |
+| **Parent / guardian** | Later — link to students; view their activity (read-only). Not built. |
 
 **Direction:** account holds capabilities (`roles[]`); **per-classroom** membership / ownership is the real permission in a room. Details in [ROADMAP.md](./ROADMAP.md).
 
@@ -56,8 +56,12 @@ Google proves the email; no Resend verification code in the current UI.
 | Role-aware UX | Done (Phase 1.6) |
 | Multi-role (student **and** teacher) | Done (`roles[]`) |
 | Founder's Stats (`/admin` — `dhyanvim@gmail.com` only) | Done |
-| Live committee floor (queue, timer, motions, gavel) | Mostly done (Phase 2) |
-| Basic chat / chair+delegate polish | Next (finish Phase 2) |
+| Live committee floor (queue, timer, motions, gavel) | Done (Phase 2 core) |
+| Basic room chat | Done (participants only; history shared) |
+| Chair session start/stop + room audio cues | Done |
+| Dashboard Your activity timeline | Done |
+| Further room UX polish | As needed |
+| Parent / guardian role | Parked — after activity; see sketch below |
 | Profile photos (Storage) | Paused (Blaze) |
 | Email/password + Resend codes | Parked (needs verified sending domain) |
 | AI (Gemini) | Phase 3 |
@@ -76,11 +80,15 @@ Google proves the email; no Resend verification code in the current UI.
 - No paid sending domain required for auth (Resend email-code path parked)  
 - Conferences = outbound links only  
 - Rooms = **open procedure floors** (any signed-in user; share link) — not classroom-gated, not video meetings  
+- Hosted + joined rooms stay listed on dashboard / `/rooms` until **Close room** (recess ≠ closed)  
 - Join: pick **chair** or **delegate** (editable in-room); delegate = **country**; chair = typed name; labels `Chair ·` / `Delegate ·`; raise **placard** → speaker queue  
+- **Room chat:** per-room text for **participants only**; late joiners see history; seat labels stay current  
 - Optional **meeting link** on create (Meet/Zoom/etc.) until Phase 6 calling  
 - Motions: anyone proposes; multiple pending; chair opens vote; procedural **yes/no**; tally chair-only until closed  
 - Speaker timer: custom duration; chair leftover-time bank (practice aid)  
 - Chair **manual gavel** (one tap per click), synced to the room  
+- **Enable sound** in-room (gavel + timer 10s warning + end chime)  
+- Chair **start / resume** or **end session (recess)**  
 - Founder **Founder's Stats** via `/admin` — hard-locked to `dhyanvim@gmail.com` only  
 
 ---
@@ -98,16 +106,27 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 
 1. ~~Google Sign-In for public signup (no paid Resend domain)~~ **Done**  
 2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**  
-3. **Finish Phase 2** (chat, chair/delegate polish)  
-4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
-5. **Phase 6** in-app calling  
-6. Photos when Blaze is OK  
+3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio)  
+4. ~~Dashboard Your activity~~ **Done**  
+5. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
+6. **Phase 6** in-app calling  
+7. Parent / guardian linking · Photos when Blaze is OK  
 
 ---
 
 ## Open ideas (parked)
 
-Parent/guardian role · revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
+Revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
+
+### Parent / guardian accounts (parked sketch)
+
+Not built yet. When we add it:
+
+- New account capability **`parent`** in `roles[]` (can combine with student/teacher later if needed).
+- Parent **links** to one or more **student** accounts (invite/code or student-approved link — exact UX TBD).
+- Parent can **view linked students’ activity** (same timeline / usage idea as the student dashboard) **read-only** — not chair rooms, not edit student work.
+- **Privacy:** student must consent to the link; parent cannot see unrelated classrooms or open rooms.
+- Build **after** student/teacher own-activity is solid; before or beside Phase 3 is fine, not blocking AI.
 
 ---
 

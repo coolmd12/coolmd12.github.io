@@ -65,7 +65,9 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | Founder Stats (`/admin`) | Done | Hard-locked to `dhyanvim@gmail.com` only. |
 | Profile photos (Storage) | Not built | Needs Firebase Blaze. |
 | Email/password + Resend codes | Parked | Removed from UI; Worker kept for later. |
-| Live committee floor | Core done — polish left | Speakers, timer, motions, gavel; chat + UX polish open. |
+| Live committee floor | Phase 2 floor done | Speakers, timer, motions, gavel (real sample), chat, session start/stop, audio cues. |
+| Dashboard Your activity | Done | Horizontal timeline + usage chips; live log + backfill from rooms/classrooms. |
+| Parent / guardian accounts | Parked | Link to students; read-only activity — see § Future Feature Ideas. |
 | AI tools (Gemini) + prep Q&A assistant | Not built | Phase 3. |
 | Conference filters | Not built | Phase 4. |
 | Tutorials / inbox / drafting / notes | Not built | Phase 5. |
@@ -104,12 +106,13 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 **Locked decisions (Phase 2):**
 
 - Rooms are **open** — any GoMUN account can create/join; share `/room/:roomId` (invite). Optional classroom link later, not required.
+- Hosted + joined rooms stay on the **dashboard / `/rooms`** until host or chair **closes** the room (recess does not remove them).
 - **Session role chosen on join** (editable in-room): **chair** or **delegate**.
 - Delegate **displayName = country** (typed for now; assignment later); chair **displayName = typed name**. UI: `Chair · …` / `Delegate · …`.
 - **Raise placard** → chair **recognizes** onto `speakerQueue`.
 - Optional **meetingLink** on create (Meet/Zoom/etc.) until Phase 6.
 - **Speaker timer:** live for everyone; **chair-only** controls; **custom duration**; leftover seconds per speech logged into a **chair-visible time bank** (practice aid — see note below). No auto-start yet.
-- **Gavel:** chair-only **manual** single tap per click (click again for more taps), synced so everyone hears; chair chooses when. No auto time-warnings.
+- **Gavel:** chair-only **manual** single tap per click, synced so everyone hears; uses a **real wooden gavel sample** (not a synth thud). No auto time-warnings.
 - **Motions:** anyone may propose; **multiple** proposed motions allowed; chair opens one for voting (`activeMotionId`); procedural votes **yes/no** (no abstain); **running tally chair-only until closed**; after pass, chair starts caucus/timer **manually** (no automation yet).
 - Room doc holds: name, status, chair, settings, timer, `speakerQueue`, `speechTimeBank`, optional `activeMotionId`, optional `meetingLink`, optional `lastGavel`.
 - Participants, motions, messages as subcollections.
@@ -131,11 +134,31 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 - [x] **Motions** flow (moderated caucus, unmoderated caucus, adjourn)
 - [x] Voting on motions (yes/no; chair tally until closed)
 - [x] Manual chair gavel (one tap per click; click again for more)
-- [ ] Basic chat/messaging
-- [ ] Chair controls polish (start/stop session)
-- [ ] Delegate view polish
+- [x] Basic chat/messaging (per-room text; participants only; full history; live seat labels)
+- [x] Chair controls polish (start/stop session + clearer session status)
+- [x] Delegate view polish (dedicated actions panel; recess messaging)
+- [x] Room audio cues (gavel + timer warning/end; Enable sound unlock)
+
+**Chat V1 (locked):** Each open room has its own `messages` subcollection. Late joiners see earlier messages. Labels follow the sender’s current seat while they are in the room; stored fallback updates on seat change so left users keep their latest label. Auto-scroll only when **you** send. Hard cap **1000 characters** per message (UI warning + Send disabled when over; rules enforce the same). No edit/delete, DMs, threads, reactions, @mentions, or uploads yet.
+
+**Chat follow-ups (parked):** message moderation / delete; soft client history limit if Spark reads get heavy; richer formatting.
+
+**Session controls V1:** Chair can **Start / resume session** (`open`) or **End session (recess)**. Ending clears active caucus / motion floor and banks leftover timer time. Motions can still move status (e.g. voting, caucus) as before. **Close room** (host or chair) is separate: marks `closedAt`, removes the room from everyone’s live dashboard/`/rooms` lists, and blocks new joins. Recess ≠ closed.
+
+**Room persistence V1:** Dashboard and `/rooms` stream rooms you **hosted** (`createdBy`) and/or **joined** (participant doc). Lists survive refresh until **Close room**.
+
+**Audio V1:** Browsers mute Web Audio until a user gesture. Room shows **Enable sound**; first click/key also unlocks. Gavel plays a **real wooden tap sample** for everyone on strike; timer plays a warning near 10s and a chime at 0.
 
 Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms (Phase 3) and hybrid rooms.
+
+### Phase 2.5 — Personal activity (dashboard) ⬅️ done
+
+- [x] Per-user activity log `users/{uid}/activity` (append-only)
+- [x] Log on classroom/room create, join, close (+ account created backfill)
+- [x] Dashboard **Your activity** horizontal timeline with colored dots + usage chips
+- [x] Merge live logs with backfill from rooms/classrooms (deduped)
+
+**Parent note:** When parent accounts ship, they will read linked students’ activity from the same collection (read-only). Not built yet.
 
 ### Phase 3 — AI integration
 
@@ -184,6 +207,8 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 
 **Goal:** Optional built-in voice (then video) so clubs can run committee **without** leaving GoMUN for Meet/Zoom — while the procedure floor stays the product core.
 
+**Why this matters:** Jumping between Zoom/Meet and the GoMUN procedure floor is awkward. A built-in call (same room page as queue, motions, chat, timers) keeps everything in one place — especially for open ad-hoc rooms with no classroom Meet link set up.
+
 **Build (high level — TBD when we reach it):**
 
 - [ ] Voice calling inside a live committee room (WebRTC or similar free-tier-friendly path)
@@ -214,6 +239,12 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Prep notes & documents:** personal (and optionally classroom-shared) notes — write on the spot, and/or attach or link Google Docs, Slides, PDFs, and similar for conference prep.
 - **Built-in AI prep assistant:** in-app Q&A that answers general questions and finds prep resources/websites; **does not edit** user work (speeches, resolutions, notes, position papers).
 - **In-app calling:** voice/video inside committee rooms so Meet/Zoom is optional, not required (Phase 6).
+- **Parent / guardian accounts (parked):**
+  - Add `parent` to account `roles[]` (multi-role still allowed).
+  - Parent **links** to one or more student accounts (invite/code or student-approved link — UX TBD).
+  - Parent views **linked student activity** (dashboard-style timeline / usage) **read-only** — cannot chair rooms or edit student work.
+  - Privacy: student consent required; no access to unrelated classrooms/rooms.
+  - Build after student/teacher own-activity (done); not a Phase 3 blocker.
 
 ---
 
@@ -221,10 +252,11 @@ Two future product lanes will expand the platform beyond basic classroom practic
 
 1. ~~Google Sign-In for public users (no paid Resend domain)~~ **Done**
 2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**
-3. **Finish Phase 2** (basic chat + chair/delegate polish)
-4. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops
-5. **Phase 6** in-app calling (after the floor is solid)
-6. Photos when Blaze is OK · optional revive email-code signup with a verified domain
+3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio cues, delegate actions) — more UX polish anytime
+4. ~~Dashboard Your activity timeline~~ **Done** (parent role still parked)
+5. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops
+6. **Phase 6** in-app calling (after the floor is solid)
+7. Parent / guardian linking (after activity is trusted) · Photos when Blaze is OK · optional revive email-code signup
 
 ---
 

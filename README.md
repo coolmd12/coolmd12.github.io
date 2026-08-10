@@ -30,8 +30,9 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Founder **Founder's Stats** (`/admin` — `dhyanvim@gmail.com` only) | Done |
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
 | Email/password + Resend verification codes | Parked — not in UI (needs paid/verified sending domain) |
-| Parent / guardian accounts | Later |
-| Live committee room (speakers, motions, timers) | Phase 2 — core floor done; chat + polish still open |
+| Parent / guardian accounts | Later — parked sketch (link to students; read-only activity) |
+| Dashboard **Your activity** timeline | Done — hosted/joined rooms, classrooms, usage chips |
+| Live committee room (speakers, motions, timers, chat) | Phase 2 done — core floor, chat, session start/stop, audio cues |
 | AI practice + prep Q&A assistant (Gemini) | Later (Phase 3) |
 | RoP cheat sheets · resolution / position-paper tools · prep notes | Later (Phase 5) |
 | **In-app calling** (voice / video inside rooms) | Later (Phase 6) — Meet/Zoom links until then |
@@ -39,9 +40,9 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 
 **GoMUN does not host conferences.** The conference page is a guide to other organizers’ events.
 
-**What a “room” is:** a shared **procedure floor** (speaker queue, placards, timers, motions, voting) — **not** a Zoom/Meet clone. **Open to any signed-in user** (create → share link → join); classrooms are separate. Meet/Zoom beside it for V1 audio/video; **Phase 6** adds in-app calling (important for ad-hoc open rooms).
+**What a “room” is:** a shared **procedure floor** (speaker queue, placards, timers, motions, voting, basic chat) — **not** a Zoom/Meet clone. **Open to any signed-in user** (create → share link → join); classrooms are separate. Meet/Zoom beside it for V1 audio/video; **Phase 6** adds in-app calling (important for ad-hoc open rooms).
 
-**Join:** pick **chair** or **delegate** (editable in-room); delegates enter a **country**; chairs enter a **name**. Labels show as `Chair · …` / `Delegate · …`. Raise **placard** → chair recognizes onto the speaker queue. Optional **meeting link** on create. Motions: anyone proposes; chair opens procedural **yes/no** votes (tally chair-only until closed).
+**Join:** pick **chair** or **delegate** (editable in-room); delegates enter a **country**; chairs enter a **name**. Labels show as `Chair · …` / `Delegate · …`. Raise **placard** → chair recognizes onto the speaker queue. Optional **meeting link** on create. Motions: anyone proposes; chair opens procedural **yes/no** votes (tally chair-only until closed). **Chat:** each room has its own text chat for **joined participants** only; late joiners see history. **Persistence:** rooms you host or join stay on the dashboard and `/rooms` until the host/chair **closes** the room (recess is not close).
 
 ***
 
@@ -73,7 +74,7 @@ See [ROADMAP.md](./ROADMAP.md) § multi-role.
 | Google account | Yes | Firebase **Google** sign-in; Google proves email ownership (no Resend domain needed) |
 | Username | Yes | Unique `@handle`; **locked** after signup |
 | Display name | Yes | Shown in rooms; editable later |
-| Capabilities | Yes | Student and/or teacher at onboarding; parent / guardian later |
+| Capabilities | Yes | Student and/or teacher at onboarding; **parent / guardian later** (see roadmap) |
 | School | Optional | Welcome or Profile; Skip OK |
 | Photo | Paused | Initials only until Firebase Storage (Blaze) is acceptable |
 
@@ -128,7 +129,7 @@ Do **not** commit `.env.local` or secrets.
 | Path | Purpose |
 | --- | --- |
 | `src/pages/` | Screens (landing, auth, welcome, dashboard, rooms, admin, …) |
-| `src/services/` | Auth, classrooms, rooms, motions, stats |
+| `src/services/` | Auth, classrooms, rooms, motions, messages, activity, stats |
 | `src/contexts/AuthContext.tsx` | Signed-in user + profile |
 | `workers/email-verification/` | Parked Cloudflare Worker for email codes |
 | `firebase/firestore.rules` | Users, usernames, classrooms, rooms, stats |
@@ -176,7 +177,7 @@ Optional voice (then video) **inside** a live committee room so clubs don’t *h
 | [README.md](./README.md) | Setup + how the app works today |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
-**Next major build:** finish Phase 2 polish (chat, chair/delegate UX), then Phase 3+.
+**Next major build:** Phase 3+ (AI, conferences, learning tools), then Phase 6 in-app calling. Parent/guardian linking is parked until activity is trusted. Room UX can keep getting small polish anytime.
 
 Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms (Phase 3) and hybrid rooms (live + AI). These room types are planned to be free and integrated with classroom and dashboard flows.
 
