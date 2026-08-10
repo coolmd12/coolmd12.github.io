@@ -1,24 +1,41 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ActivityTimeline } from '../components/ActivityTimeline';
+import { CommitteeRoomList } from '../components/CommitteeRoom/CommitteeRoomList';
 import { InviteCodeShare } from '../components/InviteCodeShare';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  backfillActivityEvents,
+  computeActivityUsage,
+  mergeActivityEvents,
+  streamActivityLog,
+} from '../services/activity';
 import {
   createClassroom,
   joinClassroomByCode,
   listUserClassrooms,
 } from '../services/classrooms';
 import { buildCommitteeRoomDraft } from '../services/committeeRoomLogic';
-import { createRoom } from '../services/rooms';
+import {
+  closeRoom,
+  createRoom,
+  streamMyCommitteeRooms,
+  type MyCommitteeRoom,
+} from '../services/rooms';
+import type { ActivityEvent } from '../types/activity';
 import { canTeach, type Classroom } from '../types';
 
 export function DashboardPage() {
   const { profile, refreshProfile } = useAuth();
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [committeeRooms, setCommitteeRooms] = useState<MyCommitteeRoom[]>([]);
+  const [liveActivity, setLiveActivity] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roomsLoading, setRoomsLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [createdRoom, setCreatedRoom] = useState<Classroom | null>(null);
-  const [createdCommitteeRoom, setCreatedCommitteeRoom] = useState<{ id: string; name: string } | null>(null);
 
   const [className, setClassName] = useState('');
   const [description, setDescription] = useState('');
@@ -30,6 +47,21 @@ export function DashboardPage() {
   const [busy, setBusy] = useState(false);
 
   const teacherCapable = canTeach(profile);
+
+  const activityEvents = useMemo(() => {
+    if (!profile) return [];
+    const backfill = backfillActivityEvents({
+      profile,
+      rooms: committeeRooms,
+      classrooms,
+    });
+    return mergeActivityEvents(liveActivity, backfill);
+  }, [profile, committeeRooms, classrooms, liveActivity]);
+
+  const activityStats = useMemo(
+    () => computeActivityUsage(activityEvents, committeeRooms, classrooms),
+    [activityEvents, committeeRooms, classrooms],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -53,6 +85,33 @@ export function DashboardPage() {
       cancelled = true;
     };
   }, [profile]);
+
+  useEffect(() => {
+    if (!profile?.uid) {
+      setCommitteeRooms([]);
+      setRoomsLoading(false);
+      return;
+    }
+    setRoomsLoading(true);
+    const unsub = streamMyCommitteeRooms(profile.uid, (rooms) => {
+      setCommitteeRooms(rooms);
+      setRoomsLoading(false);
+    });
+    return unsub;
+  }, [profile?.uid]);
+
+  useEffect(() => {
+    if (!profile?.uid) {
+      setLiveActivity([]);
+      setActivityLoading(false);
+      return;
+    }
+    setActivityLoading(true);
+    return streamActivityLog(profile.uid, (events) => {
+      setLiveActivity(events);
+      setActivityLoading(false);
+    });
+  }, [profile?.uid]);
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -110,7 +169,6 @@ export function DashboardPage() {
     setBusy(true);
     setError('');
     setMessage('');
-    setCreatedCommitteeRoom(null);
     try {
       const room = await createRoom(
         buildCommitteeRoomDraft({
@@ -122,10 +180,31 @@ export function DashboardPage() {
       if (!room) throw new Error('Could not create the committee room.');
       setRoomName('');
       setMeetingLink('');
-      setCreatedCommitteeRoom({ id: room.roomId, name: room.name });
-      setMessage(`Committee room “${room.name}” is ready.`);
+      setMessage(
+        `Committee room “${room.name}” is ready — it stays on your dashboard until you close it.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create committee room.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onCloseCommitteeRoom(roomId: string) {
+    if (!profile) return;
+    const room = committeeRooms.find((r) => r.roomId === roomId);
+    const ok = window.confirm(
+      `Close “${room?.name ?? 'this room'}”? It will leave everyone’s live list. Recess does not close a room — only this does.`,
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await closeRoom(roomId, profile.uid);
+      setMessage('Committee room closed.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not close room.');
     } finally {
       setBusy(false);
     }
@@ -154,6 +233,13 @@ export function DashboardPage() {
 
       {error ? <p className="banner error">{error}</p> : null}
       {message ? <p className="banner ok">{message}</p> : null}
+
+      <ActivityTimeline
+        events={activityEvents}
+        stats={activityStats}
+        loading={activityLoading || roomsLoading || loading}
+      />
+
       {createdRoom ? (
         <div className="panel invite-created">
           <h2>Share “{createdRoom.name}”</h2>
@@ -174,28 +260,27 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      {createdCommitteeRoom ? (
-        <div className="panel invite-created">
-          <h2>Committee room ready</h2>
-          <p className="muted">
-            Open it, pick chair or delegate, then copy the room link to invite others.
-          </p>
-          <div className="invite-created-links">
-            <Link className="btn btn-secondary" to={`/room/${createdCommitteeRoom.id}`}>
-              Open “{createdCommitteeRoom.name}”
-            </Link>
-            <button
-              type="button"
-              className="btn btn-ghost-dark"
-              onClick={() => setCreatedCommitteeRoom(null)}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       <section className="dash-grid">
+        <div className="panel">
+          <h2>Your committee rooms</h2>
+          <p className="muted">
+            Hosted and joined live rooms stay here after refresh until the host or chair closes
+            them. Recess is not the same as closing.
+          </p>
+          {profile ? (
+            <CommitteeRoomList
+              rooms={committeeRooms}
+              userId={profile.uid}
+              loading={roomsLoading}
+              busy={busy}
+              onCloseRoom={(id) => void onCloseCommitteeRoom(id)}
+            />
+          ) : null}
+          <p style={{ marginTop: '0.75rem' }}>
+            <Link to="/rooms">Open rooms hub</Link>
+          </p>
+        </div>
+
         <div className="panel">
           <h2>Your classrooms</h2>
           {loading ? <p className="muted">Loading…</p> : null}
