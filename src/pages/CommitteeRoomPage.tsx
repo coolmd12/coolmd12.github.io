@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { RoomChat } from '../components/CommitteeRoom/RoomChat';
 import { useAuth } from '../contexts/AuthContext';
-import { playGavelTaps, unlockCommitteeAudio } from '../lib/gavelAudio';
+import {
+  isCommitteeAudioUnlocked,
+  playGavelTaps,
+  playTimerEndChime,
+  playTimerWarningTick,
+  subscribeCommitteeAudioUnlock,
+  unlockCommitteeAudio,
+} from '../lib/gavelAudio';
 import {
   buildSpeakerQueue,
   formatSeatLabel,
   formatTimerClock,
+  isRoomClosed,
   motionTypeLabel,
   remainingTimerSeconds,
   tallyVotes,
@@ -20,11 +29,13 @@ import {
 import {
   advanceSpeakerQueue,
   clearSpeakerTimer,
+  closeRoom,
   joinRoom,
   pauseSpeakerTimer,
   recognizeSpeaker,
   resumeSpeakerTimer,
   setPlacard,
+  setRoomSessionStatus,
   startSpeakerTimer,
   streamParticipants,
   streamRoom,
@@ -66,7 +77,11 @@ const CommitteeRoomPage: React.FC = () => {
   const [motionTopic, setMotionTopic] = useState('');
   const [motionTotalMinutes, setMotionTotalMinutes] = useState(10);
   const [motionSpeakerSeconds, setMotionSpeakerSeconds] = useState(60);
+  const [audioReady, setAudioReady] = useState(isCommitteeAudioUnlocked);
   const lastHeardGavelAt = useRef<number | null>(null);
+  const lastTimerWarningId = useRef<string | null>(null);
+  const lastTimerEndId = useRef<string | null>(null);
+  const prevTimerSeconds = useRef<number | null>(null);
 
   useEffect(() => {
     if (!roomId) {
@@ -94,6 +109,24 @@ const CommitteeRoomPage: React.FC = () => {
       unsubMotions();
     };
   }, [roomId]);
+
+  useEffect(() => {
+    return subscribeCommitteeAudioUnlock(setAudioReady);
+  }, []);
+
+  // Browsers block sound until a gesture — unlock on first click/key in the room.
+  useEffect(() => {
+    if (audioReady) return;
+    const onGesture = () => {
+      void unlockCommitteeAudio();
+    };
+    window.addEventListener('pointerdown', onGesture, { once: true });
+    window.addEventListener('keydown', onGesture, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('keydown', onGesture);
+    };
+  }, [audioReady]);
 
   useEffect(() => {
     if (profile?.displayName && !chairName) {
@@ -138,7 +171,43 @@ const CommitteeRoomPage: React.FC = () => {
     void playGavelTaps(1);
   }, [room?.lastGavel]);
 
+  const timerSeconds = remainingTimerSeconds(room?.activeTimer, now);
+
+  useEffect(() => {
+    const timer = room?.activeTimer;
+    const timerId = timer?.timerId ?? null;
+    const prev = prevTimerSeconds.current;
+
+    // Skip the first sample so refreshing mid-timer does not false-chime.
+    if (prev === null) {
+      prevTimerSeconds.current = timerSeconds;
+      return;
+    }
+    prevTimerSeconds.current = timerSeconds;
+
+    if (!timer || timer.status !== 'running' || !timerId) return;
+
+    // One warning tick when crossing at/under 10 seconds.
+    if (
+      timerSeconds <= 10 &&
+      timerSeconds > 0 &&
+      prev > 10 &&
+      lastTimerWarningId.current !== timerId
+    ) {
+      lastTimerWarningId.current = timerId;
+      void playTimerWarningTick();
+    }
+
+    // End chime once when the clock hits zero.
+    if (timerSeconds === 0 && prev > 0 && lastTimerEndId.current !== timerId) {
+      lastTimerEndId.current = timerId;
+      void playTimerEndChime();
+    }
+  }, [room?.activeTimer, timerSeconds]);
+
   const isSessionChair = me?.role === 'chair';
+  const canCloseRoom =
+    Boolean(profile && room && (room.createdBy === profile.uid || room.chairId === profile.uid));
   const placardsUp = participants.filter((p) => p.raisedPlacard);
   const queueEntries = useMemo(
     () => buildSpeakerQueue(room?.speakerQueue ?? [], participants),
@@ -148,7 +217,6 @@ const CommitteeRoomPage: React.FC = () => {
   const currentSpeakerLabel = currentSpeaker
     ? formatSeatLabel(currentSpeaker.role, currentSpeaker.displayName)
     : 'Speaker';
-  const timerSeconds = remainingTimerSeconds(room?.activeTimer, now);
   const activeMotion = motions.find((m) => m.motionId === room?.activeMotionId) ?? null;
   const proposedMotions = motions.filter((m) => m.status === 'proposed');
   const recentMotions = motions.filter((m) => m.status === 'passed' || m.status === 'failed').slice(0, 5);
@@ -293,11 +361,50 @@ const CommitteeRoomPage: React.FC = () => {
     setActionError('');
     try {
       await unlockCommitteeAudio();
-      await strikeGavel(roomId, profile.uid);
+      await playGavelTaps(1);
+      const at = await strikeGavel(roomId, profile.uid);
+      lastHeardGavelAt.current = at;
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not strike gavel.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onSessionStatus(status: 'open' | 'recess') {
+    if (!roomId) return;
+    setBusy(true);
+    setActionError('');
+    try {
+      await setRoomSessionStatus(roomId, status);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not update session.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onCloseRoom() {
+    if (!roomId || !profile || !room) return;
+    const ok = window.confirm(
+      `Close “${room.name}”? It will leave everyone’s live dashboard list. This is different from recess.`,
+    );
+    if (!ok) return;
+    setBusy(true);
+    setActionError('');
+    try {
+      await closeRoom(roomId, profile.uid);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not close room.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onEnableSound() {
+    const ok = await unlockCommitteeAudio();
+    if (!ok) {
+      setActionError('Could not enable sound. Check that your tab is not muted.');
     }
   }
 
@@ -391,6 +498,27 @@ const CommitteeRoomPage: React.FC = () => {
     return <main className="shell">No room data available.</main>;
   }
 
+  if (isRoomClosed(room)) {
+    return (
+      <main className="shell committee-room-page">
+        <header className="page-header">
+          <div>
+            <p className="eyebrow">Committee room</p>
+            <h1>{room.name}</h1>
+            <p className="muted">This room has been closed by the host or chair.</p>
+          </div>
+        </header>
+        <p className="banner warn">
+          It no longer appears on live dashboards. Create a new room from the dashboard or rooms hub
+          if you need another session.
+        </p>
+        <Link className="btn btn-secondary" to="/dashboard">
+          Back to dashboard
+        </Link>
+      </main>
+    );
+  }
+
   if (!me) {
     return (
       <main className="shell committee-room-page">
@@ -458,7 +586,7 @@ const CommitteeRoomPage: React.FC = () => {
           <p className="eyebrow">Live committee room</p>
           <h1>{room.name}</h1>
           <p className="muted">
-            Status: {room.currentStatus.replace(/_/g, ' ')} · You are{' '}
+            Status: <strong>{room.currentStatus.replace(/_/g, ' ')}</strong> · You are{' '}
             <strong>{formatSeatLabel(me.role, me.displayName)}</strong>
           </p>
           {room.meetingLink ? (
@@ -482,8 +610,41 @@ const CommitteeRoomPage: React.FC = () => {
           <button className="btn btn-secondary" type="button" onClick={() => void copyShareLink()}>
             Copy room link
           </button>
+          {!audioReady ? (
+            <div className="profile-avatar-actions" style={{ marginTop: '0.75rem' }}>
+              <button className="btn btn-primary" type="button" onClick={() => void onEnableSound()}>
+                Enable sound
+              </button>
+              <p className="muted" style={{ margin: 0 }}>
+                Browsers block gavel/timer sounds until you allow audio.
+              </p>
+            </div>
+          ) : (
+            <p className="muted" style={{ marginTop: '0.75rem' }}>
+              Sound on — gavel + timer cues enabled.
+            </p>
+          )}
           {isSessionChair ? (
             <div className="profile-avatar-actions" style={{ marginTop: '0.75rem' }}>
+              {room.currentStatus === 'recess' ? (
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void onSessionStatus('open')}
+                >
+                  Start / resume session
+                </button>
+              ) : (
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void onSessionStatus('recess')}
+                >
+                  End session (recess)
+                </button>
+              )}
               <button
                 className="btn btn-primary"
                 type="button"
@@ -492,14 +653,58 @@ const CommitteeRoomPage: React.FC = () => {
               >
                 Gavel
               </button>
+              {canCloseRoom ? (
+                <button
+                  className="btn btn-ghost-dark"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void onCloseRoom()}
+                >
+                  Close room
+                </button>
+              ) : null}
+            </div>
+          ) : canCloseRoom ? (
+            <div className="profile-avatar-actions" style={{ marginTop: '0.75rem' }}>
+              <button
+                className="btn btn-ghost-dark"
+                type="button"
+                disabled={busy}
+                onClick={() => void onCloseRoom()}
+              >
+                Close room
+              </button>
             </div>
           ) : null}
         </div>
       </header>
 
       {actionError ? <p className="banner error">{actionError}</p> : null}
+      {room.currentStatus === 'recess' ? (
+        <p className="banner warn">
+          Session is in recess. {isSessionChair ? 'Use Start / resume session when ready.' : 'Wait for the chair to resume.'}
+        </p>
+      ) : null}
 
       <section className="dash-grid">
+        {!isSessionChair ? (
+          <div className="panel">
+            <h2>Your actions</h2>
+            <p className="muted">Raise your placard to seek the floor. Vote when a motion is open.</p>
+            <div className="profile-avatar-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() => void onTogglePlacard()}
+                type="button"
+                disabled={busy}
+              >
+                {me.raisedPlacard ? 'Lower placard' : 'Raise placard'}
+              </button>
+            </div>
+            {me.raisedPlacard ? <p className="muted">Placard is up — waiting for the chair.</p> : null}
+          </div>
+        ) : null}
+
         <div className="panel">
           <h2>Speaker timer</h2>
           <p className="committee-timer">{formatTimerClock(timerSeconds)}</p>
@@ -603,23 +808,29 @@ const CommitteeRoomPage: React.FC = () => {
           )}
           <div className="profile-avatar-actions" style={{ marginTop: '1rem' }}>
             {isSessionChair ? (
-              <button
-                className="btn btn-secondary"
-                onClick={() => void onAdvance()}
-                type="button"
-                disabled={busy || queueEntries.length === 0}
-              >
-                Advance speaker
-              </button>
-            ) : null}
-            <button
-              className="btn btn-primary"
-              onClick={() => void onTogglePlacard()}
-              type="button"
-              disabled={busy}
-            >
-              {me.raisedPlacard ? 'Lower placard' : 'Raise placard'}
-            </button>
+              <>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => void onAdvance()}
+                  type="button"
+                  disabled={busy || queueEntries.length === 0}
+                >
+                  Advance speaker
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => void onTogglePlacard()}
+                  type="button"
+                  disabled={busy}
+                >
+                  {me.raisedPlacard ? 'Lower placard' : 'Raise placard'}
+                </button>
+              </>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                Use <strong>Your actions</strong> to raise or lower your placard.
+              </p>
+            )}
           </div>
         </div>
 
@@ -900,6 +1111,13 @@ const CommitteeRoomPage: React.FC = () => {
             ))}
           </ul>
         </div>
+
+        <RoomChat
+          roomId={room.roomId}
+          me={me}
+          participants={participants}
+          onError={setActionError}
+        />
       </section>
     </main>
   );
