@@ -22,7 +22,7 @@ export function LandingPage() {
           <p className="hero-lede">
             Our vision is for you to practice Model United Nations like an expert, find and
             compete in more and more conferences, and become the powerful delegate you were
-            meant to be — without paying a cent.
+            meant to be — without paying a cent. Get ready to experience new levels of MUN! We'll make you ready, from beginner to expert. Welcome to GoMUN Delegate Arena!
           </p>
           <div className="hero-cta">
             {signedIn ? (
@@ -82,23 +82,21 @@ export function LandingPage() {
             <h2>Classroom-private. Conference-real.</h2>
             <p>
               GoMUN allows teachers to open a private room with an invite code. Students join
-              their group — speeches, motions, and meetings stay inside that circle, like Google
-              Classroom for MUN.
+              their group — speeches, motions, and meetings stay inside that circle.
             </p>
           </div>
           <ul className="feature-list">
             <li>
-              <strong>Live practice</strong> with friends, teammates, and teachers
+              <strong>Live practice</strong> with friends, teammates, and teachers, all in one place!
             </li>
             <li>
-              <strong>AI practice</strong> when you want to train alone (Gemini-powered,
-              coming next)
+              <strong>AI practice</strong> when you want to train alone (coming next)
             </li>
             <li>
-              <strong>Meet / Zoom links</strong> attached to each session
+              <strong>Meeting links</strong> attached to each session
             </li>
             <li>
-              <strong>Conference shortcuts</strong> to events already on the web
+              <strong>Conference shortcuts</strong> to events already on the web, so that you can easily join the conference you want to attend without having to search for it yourself!
             </li>
           </ul>
         </div>
@@ -125,7 +123,7 @@ export function LandingPage() {
             <article>
               <h3>Hybrid</h3>
               <p>
-                Humans in the room, AI filling empty seats. Ideal for small clubs that still
+                Humans in the room, AI filling empty seats. Ideal for small groups that still
                 want a full committee feel.
               </p>
             </article>
@@ -144,9 +142,9 @@ export function LandingPage() {
               I thought…no one should be deprived of MUN’s amazing experiences, from meeting new
               people to strengthening communication to getting recognized for hard work that you
               put in. So, I wanted to bring this opportunity to each and every one of you, in
-              hopes that this completely FREE website (no hidden charges) will make you become a
-              symbol of confidence who has truly found their potential. Honorary delegates,
-              ladies, and gentlemen, get ready for the next committee session. It’s time to
+              hopes that this FREE website (no hidden charges) will make you become a
+              symbol of confidence who has truly found their potential. Ladies, and gentlemen, 
+              honorary delegates, get ready for the next committee session. It’s time to
               GoMUN!
             </p>
           </div>
