@@ -19,21 +19,32 @@ export function isFounderEmail(email: string | null | undefined): boolean {
 export async function bumpRegisteredUserCount(): Promise<void> {
   const database = requireDb();
   const ref = doc(database, 'stats', 'app');
+  await runTransaction(database, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) {
+      tx.set(ref, { userCount: 1, updatedAt: Date.now() });
+      return;
+    }
+    const current = Number(snap.data()?.userCount) || 0;
+    tx.update(ref, { userCount: current + 1, updatedAt: Date.now() });
+  });
+}
+
+/** Best-effort decrement when a user deletes their account (keeps founder count closer to Auth). */
+export async function decrementRegisteredUserCount(): Promise<void> {
+  const database = requireDb();
+  const ref = doc(database, 'stats', 'app');
   try {
     await runTransaction(database, async (tx) => {
       const snap = await tx.get(ref);
-      const current = snap.exists() ? Number(snap.data()?.userCount) || 0 : 0;
-      tx.set(
-        ref,
-        {
-          userCount: current + 1,
-          updatedAt: Date.now(),
-        },
-        { merge: true },
-      );
+      if (!snap.exists()) return;
+      const current = Number(snap.data()?.userCount) || 0;
+      const next = Math.max(0, current - 1);
+      if (next === current) return;
+      tx.update(ref, { userCount: next, updatedAt: Date.now() });
     });
   } catch (err) {
-    console.warn('Could not bump user count', err);
+    console.warn('Could not decrement user count', err);
   }
 }
 

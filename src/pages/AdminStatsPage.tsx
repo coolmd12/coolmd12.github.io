@@ -52,9 +52,9 @@ export function AdminStatsPage() {
         <p className="stats-label">Registered users</p>
         <p className="stats-value">{userCount === null ? '…' : userCount}</p>
         <p className="muted">
-          Counts go up when someone finishes username setup (or the older email signup path).
-          If this is behind Firebase Auth, publish the latest{' '}
-          <code>firebase/firestore.rules</code>, then new signups will catch up.
+          Counts go up when someone finishes username setup (or the older email signup path), and
+          down when someone deletes their account. If this is behind Firebase Auth, publish the
+          latest <code>firebase/firestore.rules</code>, then new signups will catch up.
         </p>
         <p className="muted">
           Exact Auth accounts:{' '}

@@ -11,6 +11,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../lib/firebase';
 import {
   claimUsername,
+  deleteAccount,
   ensureUserProfile,
   loginUser,
   loginWithGoogle,
@@ -35,11 +36,12 @@ interface AuthContextValue {
   }) => Promise<void>;
   claimUsername: (
     username: string,
-    extras?: { displayName?: string; roles?: UserRole[] },
+    extras?: { displayName?: string; roles?: UserRole[]; dateOfBirth?: string },
   ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -97,7 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const claimUsernameFn = useCallback(
-    async (username: string, extras?: { displayName?: string; roles?: UserRole[] }) => {
+    async (
+      username: string,
+      extras?: { displayName?: string; roles?: UserRole[]; dateOfBirth?: string },
+    ) => {
       const p = await claimUsername(username, extras);
       setProfile(p);
     },
@@ -119,6 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }, []);
 
+  const deleteAccountFn = useCallback(async () => {
+    await deleteAccount();
+    setUser(null);
+    setProfile(null);
+    window.location.replace('/');
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -131,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       loginWithGoogle: loginWithGoogleFn,
       logout,
+      deleteAccount: deleteAccountFn,
     }),
     [
       user,
@@ -142,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       loginWithGoogleFn,
       logout,
+      deleteAccountFn,
     ],
   );
 

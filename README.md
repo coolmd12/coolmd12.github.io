@@ -30,7 +30,7 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Founder **Founder's Stats** (`/admin` — `dhyanvim@gmail.com` only) | Done |
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
 | Email/password + Resend verification codes | Parked — not in UI (needs paid/verified sending domain) |
-| Parent / guardian accounts | Later — parked sketch (link to students; read-only activity) |
+| Parent / guardian portal (`/family`) | Done (V1) — parent-only; link via `@username` + family code; activity + monthly summaries |
 | Dashboard **Your activity** timeline | Done — hosted/joined rooms, classrooms, usage chips |
 | Live committee room (speakers, motions, timers, chat) | Phase 2 done — core floor, chat, session start/stop, audio cues |
 | AI practice + prep Q&A assistant (Gemini) | Later (Phase 3) |
@@ -74,7 +74,7 @@ See [ROADMAP.md](./ROADMAP.md) § multi-role.
 | Google account | Yes | Firebase **Google** sign-in; Google proves email ownership (no Resend domain needed) |
 | Username | Yes | Unique `@handle`; **locked** after signup |
 | Display name | Yes | Shown in rooms; editable later |
-| Capabilities | Yes | Student and/or teacher at onboarding; **parent / guardian later** (see roadmap) |
+| Capabilities | Yes | Student and/or teacher, **or** parent-only (V1); multi-role parent later |
 | School | Optional | Welcome or Profile; Skip OK |
 | Photo | Paused | Initials only until Firebase Storage (Blaze) is acceptable |
 
@@ -177,7 +177,7 @@ Optional voice (then video) **inside** a live committee room so clubs don’t *h
 | [README.md](./README.md) | Setup + how the app works today |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
-**Next major build:** Phase 3+ (AI, conferences, learning tools), then Phase 6 in-app calling. Parent/guardian linking is parked until activity is trusted. Room UX can keep getting small polish anytime.
+**Next major build:** Phase 3+ (AI, conferences, learning tools), then Phase 6 in-app calling. Parent portal V1 is shipped (DOB, not ID attestation); multi-role later. Room UX can keep getting small polish anytime.
 
 Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms (Phase 3) and hybrid rooms (live + AI). These room types are planned to be free and integrated with classroom and dashboard flows.
 

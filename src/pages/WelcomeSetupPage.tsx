@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { finishProfileSetup } from '../services/auth';
-import { formatCapabilities, needsProfileSetup, needsUsername } from '../types';
+import { formatCapabilities, homePathForProfile, needsProfileSetup, needsUsername } from '../types';
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -41,7 +41,7 @@ export function WelcomeSetupPage() {
   }
 
   if (profile && !needsProfileSetup(profile)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={homePathForProfile(profile)} replace />;
   }
 
   if (!profile) {
@@ -55,9 +55,9 @@ export function WelcomeSetupPage() {
   const current = profile;
   const initials = initialsFromName(current.displayName);
 
-  async function goDashboard() {
+  async function goHome() {
     await refreshProfile();
-    navigate('/dashboard', { replace: true });
+    navigate(homePathForProfile(current), { replace: true });
   }
 
   async function onSave(e: FormEvent) {
@@ -69,7 +69,7 @@ export function WelcomeSetupPage() {
         displayName: current.displayName,
         school,
       });
-      await goDashboard();
+      await goHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save profile.');
     } finally {
@@ -82,7 +82,7 @@ export function WelcomeSetupPage() {
     setBusy(true);
     try {
       await finishProfileSetup();
-      await goDashboard();
+      await goHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not continue.');
     } finally {

@@ -16,6 +16,7 @@ import { ChooseUsernamePage } from './pages/ChooseUsernamePage';
 import CommitteeRoomPage from './pages/CommitteeRoomPage';
 import RoomsPage from './pages/RoomsPage';
 import { AdminStatsPage } from './pages/AdminStatsPage';
+import { FamilyPage } from './pages/FamilyPage';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/choose-username" element={<ChooseUsernamePage />} />
               <Route path="/welcome" element={<WelcomeSetupPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/family" element={<FamilyPage />} />
               <Route path="/admin" element={<AdminStatsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/classroom/:classroomId" element={<ClassroomPage />} />

@@ -27,7 +27,7 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 | **Teacher** | Create classroom, share invite, chair later |
 | **Student** | Join with code, practice |
 | **Both** | Same account can teach one room and join another as a delegate |
-| **Parent / guardian** | Later — link to students; view their activity (read-only). Not built. |
+| **Parent / guardian** | Parent-only account; link kids via `@username` + family code; `/family` read-only activity + monthly summaries. |
 
 **Direction:** account holds capabilities (`roles[]`); **per-classroom** membership / ownership is the real permission in a room. Details in [ROADMAP.md](./ROADMAP.md).
 
@@ -36,9 +36,9 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 ## User flow (today)
 
 1. **Continue with Google** (signup or login)  
-2. New users: **username** + display name + capabilities (student and/or teacher)  
-3. Welcome: optional school (Skip OK) · avatars = **initials**  
-4. Dashboard → classroom / rooms → practice / conferences / profile  
+2. New users: **username** + display name + capabilities (student and/or teacher, **or** parent-only)  
+3. Welcome: optional school (Skip OK) · avatars = **initials** · parents enter **date of birth** (18+)  
+4. Dashboard (students/teachers) or **Parent portal** (`/family`) → practice / conferences / profile  
 
 Google proves the email; no Resend verification code in the current UI.
 
@@ -61,7 +61,7 @@ Google proves the email; no Resend verification code in the current UI.
 | Chair session start/stop + room audio cues | Done |
 | Dashboard Your activity timeline | Done |
 | Further room UX polish | As needed |
-| Parent / guardian role | Parked — after activity; see sketch below |
+| Parent / guardian portal (`/family`) | Done (V1) | Parent-only; link via family code; activity + monthly summaries |
 | Profile photos (Storage) | Paused (Blaze) |
 | Email/password + Resend codes | Parked (needs verified sending domain) |
 | AI (Gemini) | Phase 3 |
@@ -90,6 +90,7 @@ Google proves the email; no Resend verification code in the current UI.
 - **Enable sound** in-room (gavel + timer 10s warning + end chime)  
 - Chair **start / resume** or **end session (recess)**  
 - Founder **Founder's Stats** via `/admin` — hard-locked to `dhyanvim@gmail.com` only  
+- **Parent portal V1:** parent-only accounts (`roles: ['parent']`); parent-initiated link with student `@username` + **family code** (no Approve/Deny); `/family` **Parent portal** shows linked students’ activity + monthly summaries (Aeries-style overview); parents enter **date of birth** (must be 18+; no ID upload); parents do not chair rooms or edit student work  
 
 ---
 
@@ -108,9 +109,9 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**  
 3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio)  
 4. ~~Dashboard Your activity~~ **Done**  
-5. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
-6. **Phase 6** in-app calling  
-7. Parent / guardian linking · Photos when Blaze is OK  
+5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**  
+6. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
+7. **Phase 6** in-app calling · Photos when Blaze is OK  
 
 ---
 
@@ -118,15 +119,19 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 
 Revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
 
-### Parent / guardian accounts (parked sketch)
+### Parent / guardian accounts (V1 done; later parked)
 
-Not built yet. When we add it:
+**V1 (shipped):**
 
-- New account capability **`parent`** in `roles[]` (can combine with student/teacher later if needed).
-- Parent **links** to one or more **student** accounts (invite/code or student-approved link — exact UX TBD).
-- Parent can **view linked students’ activity** (same timeline / usage idea as the student dashboard) **read-only** — not chair rooms, not edit student work.
-- **Privacy:** student must consent to the link; parent cannot see unrelated classrooms or open rooms.
-- Build **after** student/teacher own-activity is solid; before or beside Phase 3 is fine, not blocking AI.
+- Parent-only accounts (`roles: ['parent']`); multi-role parent+student/teacher later.
+- Parent-initiated link: enter student `@username` + **family code** (shown on student Profile; rotatable). No student Approve/Deny queue.
+- `/family`: linked students → read-only activity timeline + usage chips + **rule-based monthly summaries** (no AI narrative yet).
+- Cap ~5 linked students per parent. Parent can unlink; student can rotate code (blocks new links) and unlink as a safety escape.
+- Age: required **date of birth** on parent account (must calculate to 18+). No ID uploads. Stronger identity checks parked.
+- Parents do **not** see chat, motions, room floor, or classroom rosters in V1.
+- UX: Aeries-like **Parent portal** — pick a linked student, view their practice activity / summaries.
+
+**Later:** multi-role; stronger identity checks; richer visibility; AI-written summary narratives.
 
 ---
 

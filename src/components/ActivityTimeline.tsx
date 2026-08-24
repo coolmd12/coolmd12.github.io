@@ -25,13 +25,21 @@ interface ActivityTimelineProps {
   events: ActivityEvent[];
   stats: ActivityUsageStats;
   loading?: boolean;
+  title?: string;
+  emptyMessage?: string;
 }
 
-export function ActivityTimeline({ events, stats, loading = false }: ActivityTimelineProps) {
+export function ActivityTimeline({
+  events,
+  stats,
+  loading = false,
+  title = 'Your Activity',
+  emptyMessage = 'Nothing here yet. Create or join a committee room or classroom and your trail will start here.',
+}: ActivityTimelineProps) {
   return (
-    <section className="activity-strip" aria-label="Your activity">
+    <section className="activity-strip" aria-label={title}>
       <div className="activity-strip-head">
-        <h2 className="activity-heading">Your Activity</h2>
+        <h2 className="activity-heading">{title}</h2>
         <ul className="activity-usage-chips">
           <li>
             <strong>{stats.roomsHosted}</strong>
@@ -55,10 +63,7 @@ export function ActivityTimeline({ events, stats, loading = false }: ActivityTim
       {loading ? (
         <p className="muted">Loading your timeline…</p>
       ) : events.length === 0 ? (
-        <p className="muted activity-empty">
-          Nothing here yet. Create or join a committee room or classroom and your trail will start
-          here.
-        </p>
+        <p className="muted activity-empty">{emptyMessage}</p>
       ) : (
         <div className="activity-timeline-scroll">
           <ol className="activity-timeline">
