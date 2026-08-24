@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { CommitteeRoomList } from '../components/CommitteeRoom/CommitteeRoomList';
 import { useAuth } from '../contexts/AuthContext';
 import { buildCommitteeRoomDraft, isRoomClosed } from '../services/committeeRoomLogic';
@@ -9,6 +9,7 @@ import {
   streamMyCommitteeRooms,
   type MyCommitteeRoom,
 } from '../services/rooms';
+import { isParentOnly } from '../types';
 
 export default function RoomsPage() {
   const { user, profile } = useAuth();
@@ -19,6 +20,7 @@ export default function RoomsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const parentAccount = isParentOnly(profile);
 
   const liveRooms = useMemo(
     () => committeeRooms.filter((r) => !isRoomClosed(r)),
@@ -30,7 +32,7 @@ export default function RoomsPage() {
   );
 
   useEffect(() => {
-    if (!profile?.uid) {
+    if (!profile?.uid || parentAccount) {
       setCommitteeRooms([]);
       setRoomsLoading(false);
       return;
@@ -40,11 +42,11 @@ export default function RoomsPage() {
       setCommitteeRooms(rooms);
       setRoomsLoading(false);
     });
-  }, [profile?.uid]);
+  }, [profile?.uid, parentAccount]);
 
   async function onCreateCommitteeRoom(e: FormEvent) {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || parentAccount) return;
     setBusy(true);
     setError('');
     setMessage('');
@@ -85,6 +87,10 @@ export default function RoomsPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (parentAccount) {
+    return <Navigate to="/family" replace />;
   }
 
   return (

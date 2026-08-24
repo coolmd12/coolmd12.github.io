@@ -2,7 +2,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useState, useEffect, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCapabilities } from '../../types';
+import { formatCapabilities, isParentOnly } from '../../types';
 import { isFounderEmail } from '../../services/stats';
 
 export function SiteHeader() {
@@ -10,6 +10,7 @@ export function SiteHeader() {
   const [showRoomsModal, setShowRoomsModal] = useState(false);
   const caps = formatCapabilities(profile);
   const showFounderStats = isFounderEmail(profile?.email || user?.email);
+  const parentAccount = isParentOnly(profile);
 
   useEffect(() => {
     if (!showRoomsModal) return;
@@ -51,20 +52,23 @@ export function SiteHeader() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          {user ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
+          {user && !parentAccount ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
+          {user && parentAccount ? <NavLink to="/family">Parent portal</NavLink> : null}
           <NavLink to="/conferences">Conferences</NavLink>
-          <NavLink to="/practice">Practice</NavLink>
-          <NavLink
-            to="/rooms"
-            onClick={(e: MouseEvent<HTMLAnchorElement>) => {
-              if (!user) {
-                e.preventDefault();
-                setShowRoomsModal(true);
-              }
-            }}
-          >
-            Rooms
-          </NavLink>
+          {!parentAccount ? <NavLink to="/practice">Practice</NavLink> : null}
+          {!parentAccount ? (
+            <NavLink
+              to="/rooms"
+              onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+                if (!user) {
+                  e.preventDefault();
+                  setShowRoomsModal(true);
+                }
+              }}
+            >
+              Rooms
+            </NavLink>
+          ) : null}
           {showFounderStats ? <NavLink to="/admin">Founder&apos;s Stats</NavLink> : null}
         </nav>
 

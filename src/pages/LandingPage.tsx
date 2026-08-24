@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { canTeach } from '../types';
+import { canTeach, homePathForProfile, isParentOnly } from '../types';
 
 export function LandingPage() {
   const { user, profile } = useAuth();
   const signedIn = Boolean(user);
   const teacherCapable = canTeach(profile);
+  const parentAccount = isParentOnly(profile);
+  const homePath = homePathForProfile(profile);
 
   return (
     <main className="landing">
@@ -14,7 +16,7 @@ export function LandingPage() {
       <section className="hero">
         <div className="hero-atmosphere" aria-hidden="true" />
         <div className="shell hero-content">
-          <p className="hero-kicker">Genuinely free · Students & teachers</p>
+          <p className="hero-kicker">Genuinely free · Students, teachers & parents</p>
           <h1 className="hero-brand">
             GoMUN
             <span className="hero-brand-rest">Delegate Arena</span>
@@ -22,12 +24,16 @@ export function LandingPage() {
           <p className="hero-lede">
             Our vision is for you to practice Model United Nations like an expert, find and
             compete in more and more conferences, and become the powerful delegate you were
-            meant to be — without paying a cent. Get ready to experience new levels of MUN! We'll make you ready, from beginner to expert. Welcome to GoMUN Delegate Arena!
+            meant to be — without paying a cent.
           </p>
           <div className="hero-cta">
             {signedIn ? (
-              <Link to="/dashboard" className="btn btn-primary btn-lg">
-                {teacherCapable ? 'Open dashboard' : 'Go to my classrooms'}
+              <Link to={homePath} className="btn btn-primary btn-lg">
+                {parentAccount
+                  ? 'Open parent portal'
+                  : teacherCapable
+                    ? 'Open dashboard'
+                    : 'Go to my classrooms'}
               </Link>
             ) : (
               <Link to="/signup" className="btn btn-primary btn-lg">
@@ -82,21 +88,23 @@ export function LandingPage() {
             <h2>Classroom-private. Conference-real.</h2>
             <p>
               GoMUN allows teachers to open a private room with an invite code. Students join
-              their group — speeches, motions, and meetings stay inside that circle.
+              their group — speeches, motions, and meetings stay inside that circle, like Google
+              Classroom for MUN.
             </p>
           </div>
           <ul className="feature-list">
             <li>
-              <strong>Live practice</strong> with friends, teammates, and teachers, all in one place!
+              <strong>Live practice</strong> with friends, teammates, and teachers
             </li>
             <li>
-              <strong>AI practice</strong> when you want to train alone (coming next)
+              <strong>AI practice</strong> when you want to train alone (Gemini-powered,
+              coming next)
             </li>
             <li>
-              <strong>Meeting links</strong> attached to each session
+              <strong>Meet / Zoom links</strong> attached to each session
             </li>
             <li>
-              <strong>Conference shortcuts</strong> to events already on the web, so that you can easily join the conference you want to attend without having to search for it yourself!
+              <strong>Conference shortcuts</strong> to events already on the web
             </li>
           </ul>
         </div>
@@ -123,7 +131,7 @@ export function LandingPage() {
             <article>
               <h3>Hybrid</h3>
               <p>
-                Humans in the room, AI filling empty seats. Ideal for small groups that still
+                Humans in the room, AI filling empty seats. Ideal for small clubs that still
                 want a full committee feel.
               </p>
             </article>
@@ -142,9 +150,9 @@ export function LandingPage() {
               I thought…no one should be deprived of MUN’s amazing experiences, from meeting new
               people to strengthening communication to getting recognized for hard work that you
               put in. So, I wanted to bring this opportunity to each and every one of you, in
-              hopes that this FREE website (no hidden charges) will make you become a
-              symbol of confidence who has truly found their potential. Ladies, and gentlemen, 
-              honorary delegates, get ready for the next committee session. It’s time to
+              hopes that this completely FREE website (no hidden charges) will make you become a
+              symbol of confidence who has truly found their potential. Honorary delegates,
+              ladies, and gentlemen, get ready for the next committee session. It’s time to
               GoMUN!
             </p>
           </div>
@@ -176,16 +184,22 @@ export function LandingPage() {
             <>
               <div>
                 <h2>
-                  {teacherCapable ? 'Ready for your next committee?' : 'Ready to practice?'}
+                  {parentAccount
+                    ? 'Check on your student’s progress'
+                    : teacherCapable
+                      ? 'Ready for your next committee?'
+                      : 'Ready to practice?'}
                 </h2>
                 <p>
-                  {teacherCapable
-                    ? 'Open your dashboard to create a classroom, share an invite code, or join another room as a delegate.'
-                    : 'Open your dashboard to join with an invite code or enter a classroom you’re already in.'}
+                  {parentAccount
+                    ? 'Open the parent portal to see linked students’ practice activity.'
+                    : teacherCapable
+                      ? 'Open your dashboard to create a classroom, share an invite code, or join another room as a delegate.'
+                      : 'Open your dashboard to join with an invite code or enter a classroom you’re already in.'}
                 </p>
               </div>
-              <Link to="/dashboard" className="btn btn-primary btn-lg">
-                Go to dashboard
+              <Link to={homePath} className="btn btn-primary btn-lg">
+                {parentAccount ? 'Open parent portal' : 'Go to dashboard'}
               </Link>
             </>
           ) : (
@@ -193,8 +207,8 @@ export function LandingPage() {
               <div>
                 <h2>Start with a secure account</h2>
                 <p>
-                  Create an account as a student, teacher, or both — then open a private
-                  classroom and start practicing. Genuinely free, with no paid tiers planned.
+                  Create an account as a student, teacher, parent, or both — then open a private
+                  classroom or parent portal. Genuinely free, with no paid tiers planned.
                 </p>
               </div>
               <Link to="/signup" className="btn btn-primary btn-lg">

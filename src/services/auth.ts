@@ -1,7 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   fetchSignInMethodsForEmail,
   GoogleAuthProvider,
+  reauthenticateWithPopup,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -10,9 +12,12 @@ import {
 } from 'firebase/auth';
 import {
   arrayUnion,
+  collection,
+  deleteDoc,
   deleteField,
   doc,
   getDoc,
+  getDocs,
   runTransaction,
   serverTimestamp,
   setDoc,
@@ -22,7 +27,9 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase';
 import { validateDisplayName, validateUsername } from '../lib/username';
 import { checkSignupToken, consumeSignupToken } from './emailVerification';
-import { bumpRegisteredUserCount } from './stats';
+import { bumpRegisteredUserCount, decrementRegisteredUserCount } from './stats';
+import { ensureFamilyCode, listParentLinksForParent, listParentLinksForStudent } from './parentLinks';
+import { parseParentDateOfBirth } from '../lib/dateOfBirth';
 import {
   normalizeAccountRoles,
   profileRoles,
@@ -292,14 +299,23 @@ export async function registerUser(input: {
   }
 
   await updateProfile(cred.user, { displayName: displayCheck.displayName });
-  await bumpRegisteredUserCount();
+  try {
+    await bumpRegisteredUserCount();
+  } catch (err) {
+    console.warn('Could not bump registered user count', err);
+  }
   return profile;
 }
 
 /** One-time username (+ optional display name / roles) for legacy and Google accounts. */
 export async function claimUsername(
   rawUsername: string,
-  extras?: { displayName?: string; roles?: UserRole[] },
+  extras?: {
+    displayName?: string;
+    roles?: UserRole[];
+    /** Parent portal: YYYY-MM-DD (must be 18+). */
+    dateOfBirth?: string;
+  },
 ): Promise<UserProfile> {
   const { auth: a, db: database } = requireAuthDb();
   const user = a.currentUser;
@@ -324,6 +340,13 @@ export async function claimUsername(
     rolePatch = normalizeAccountRoles(extras.roles);
   }
 
+  let parentDob: string | undefined;
+  if (rolePatch.roles.includes('parent')) {
+    const dobCheck = parseParentDateOfBirth(extras?.dateOfBirth || '');
+    if (dobCheck.ok === false) throw new Error(dobCheck.error);
+    parentDob = dobCheck.dateOfBirth;
+  }
+
   const existing = await fetchUserProfile(user.uid);
   if (existing?.username) {
     throw new Error('You already have a username. Change it anytime from your profile.');
@@ -344,11 +367,18 @@ export async function claimUsername(
     role: rolePatch.role,
     roles: rolePatch.roles,
     emailVerifiedAt: existing?.emailVerifiedAt ?? (isGoogleAuthUser(user) ? Date.now() : undefined),
-    profileSetupComplete: existing?.profileSetupComplete === true ? true : false,
+    // Parents skip the school welcome step; Family is their home.
+    profileSetupComplete:
+      rolePatch.roles.includes('parent')
+        ? true
+        : existing?.profileSetupComplete === true
+          ? true
+          : false,
     createdAt: existing?.createdAt ?? Date.now(),
     classroomIds: existing?.classroomIds ?? [],
     ...(existing?.school ? { school: existing.school } : {}),
     ...(existing?.photoURL ? { photoURL: existing.photoURL } : {}),
+    ...(parentDob ? { dateOfBirth: parentDob } : {}),
   };
 
   let createdNewProfile = false;
@@ -368,6 +398,8 @@ export async function claimUsername(
         role: rolePatch.role,
         roles: rolePatch.roles,
       };
+      if (parentDob) patch.dateOfBirth = parentDob;
+      if (rolePatch.roles.includes('parent')) patch.profileSetupComplete = true;
       tx.update(userRef, patch);
     } else {
       createdNewProfile = true;
@@ -394,11 +426,20 @@ export async function claimUsername(
   }
 
   if (createdNewProfile) {
-    await bumpRegisteredUserCount();
+    try {
+      await bumpRegisteredUserCount();
+    } catch (err) {
+      console.warn('Could not bump registered user count', err);
+    }
   }
 
-  const next = await fetchUserProfile(user.uid);
+  let next = await fetchUserProfile(user.uid);
   if (!next) throw new Error('Profile not found.');
+
+  if (!rolePatch.roles.includes('parent')) {
+    next = await ensureFamilyCode(next);
+  }
+
   return next;
 }
 
@@ -581,6 +622,7 @@ export async function updateUserProfile(input: {
   school?: string;
   photoURL?: string | null;
   profileSetupComplete?: boolean;
+  dateOfBirth?: string;
 }): Promise<UserProfile> {
   const { auth: a, db: database } = requireAuthDb();
   const user = a.currentUser;
@@ -615,6 +657,13 @@ export async function updateUserProfile(input: {
     const normalized = normalizeAccountRoles(input.roles);
     nextRole = normalized.role;
     nextRoles = normalized.roles;
+  }
+
+  let nextDob = existing.dateOfBirth;
+  if (input.dateOfBirth !== undefined) {
+    const dobCheck = parseParentDateOfBirth(input.dateOfBirth);
+    if (dobCheck.ok === false) throw new Error(dobCheck.error);
+    nextDob = dobCheck.dateOfBirth;
   }
 
   const nextSchool =
@@ -665,6 +714,9 @@ export async function updateUserProfile(input: {
       if (input.profileSetupComplete !== undefined) {
         patch.profileSetupComplete = input.profileSetupComplete;
       }
+      if (input.dateOfBirth !== undefined) {
+        patch.dateOfBirth = nextDob;
+      }
 
       tx.update(userRef, patch);
       tx.set(newUsernameRef, { uid: user.uid, createdAt: Date.now() });
@@ -687,6 +739,9 @@ export async function updateUserProfile(input: {
     }
     if (input.profileSetupComplete !== undefined) {
       firestorePatch.profileSetupComplete = input.profileSetupComplete;
+    }
+    if (input.dateOfBirth !== undefined) {
+      firestorePatch.dateOfBirth = nextDob;
     }
 
     if (Object.keys(firestorePatch).length) {
@@ -712,6 +767,7 @@ export async function updateUserProfile(input: {
     roles: nextRoles,
     school: nextSchool,
     photoURL: nextPhoto,
+    dateOfBirth: nextDob,
     profileSetupComplete:
       input.profileSetupComplete !== undefined
         ? input.profileSetupComplete
@@ -790,4 +846,88 @@ function storageErrorMessage(err: unknown): string {
   return err instanceof Error
     ? err.message
     : 'Could not upload photo. Enable Firebase Storage and publish storage rules.';
+}
+
+async function deleteAuthUser(user: User): Promise<void> {
+  try {
+    await deleteUser(user);
+  } catch (err) {
+    const code =
+      err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
+    if (code === 'auth/requires-recent-login' && isGoogleAuthUser(user)) {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'none' });
+      await reauthenticateWithPopup(user, provider);
+      await deleteUser(user);
+      return;
+    }
+    if (code === 'auth/requires-recent-login') {
+      throw new Error(
+        'For security, sign out, sign in again, then delete your account.',
+      );
+    }
+    throw err instanceof Error ? err : new Error('Could not delete your sign-in account.');
+  }
+}
+
+/** Permanently delete the signed-in account (Firestore profile + Google Auth). */
+export async function deleteAccount(): Promise<void> {
+  const { auth: a, db: database } = requireAuthDb();
+  const user = a.currentUser;
+  if (!user) throw new Error('You must be signed in to delete your account.');
+
+  const profile = await fetchUserProfile(user.uid);
+  if (!profile) throw new Error('Profile not found.');
+
+  const activitySnap = await getDocs(collection(database, 'users', user.uid, 'activity'));
+  await Promise.all(activitySnap.docs.map((d) => deleteDoc(d.ref)));
+
+  const parentLinks = [
+    ...(await listParentLinksForParent(user.uid)),
+    ...(await listParentLinksForStudent(user.uid)),
+  ];
+  const seenLinkIds = new Set<string>();
+  await Promise.all(
+    parentLinks.map(async (link) => {
+      if (seenLinkIds.has(link.linkId)) return;
+      seenLinkIds.add(link.linkId);
+      await deleteDoc(doc(database, 'parentLinks', link.linkId));
+    }),
+  );
+
+  try {
+    await deleteDoc(doc(database, 'familyCodes', user.uid));
+  } catch (err) {
+    console.warn('Could not delete family code', err);
+  }
+
+  for (const classroomId of profile.classroomIds || []) {
+    try {
+      await deleteDoc(doc(database, 'classrooms', classroomId, 'members', user.uid));
+    } catch (err) {
+      console.warn(`Could not leave classroom ${classroomId}`, err);
+    }
+  }
+
+  await decrementRegisteredUserCount();
+
+  if (profile.username) {
+    try {
+      await deleteDoc(doc(database, 'usernames', profile.username));
+    } catch (err) {
+      console.warn('Could not release username', err);
+    }
+  }
+
+  const email = profile.email.trim().toLowerCase();
+  if (email) {
+    try {
+      await deleteDoc(doc(database, 'emails', email));
+    } catch (err) {
+      console.warn('Could not release email claim', err);
+    }
+  }
+
+  await deleteDoc(doc(database, 'users', user.uid));
+  await deleteAuthUser(user);
 }

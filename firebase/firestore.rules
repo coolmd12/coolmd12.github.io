@@ -34,8 +34,32 @@ service cloud.firestore {
     function validRolesList(value) {
       return value is list
         && value.size() > 0
-        && value.size() <= 2
-        && value.hasOnly(['student', 'teacher']);
+        && (
+          (value.size() <= 2 && value.hasOnly(['student', 'teacher']))
+          || (value.size() == 1 && value.hasOnly(['parent']))
+        );
+    }
+
+    function isParentOnlyAccount() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && 'roles' in userDoc()
+        && userDoc().roles.size() == 1
+        && userDoc().roles.hasOnly(['parent']);
+    }
+
+    function parentHasDateOfBirth() {
+      return isParentOnlyAccount()
+        && 'dateOfBirth' in userDoc()
+        && userDoc().dateOfBirth is string
+        && userDoc().dateOfBirth.size() == 10;
+    }
+
+    function linkedParentOf(studentUid) {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/parentLinks/$(request.auth.uid + '_' + studentUid)
+        );
     }
 
     // Account can create classrooms if primary role is teacher or roles[] includes teacher.
@@ -46,6 +70,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSelf(userId)
+        || linkedParentOf(userId)
         || (signedIn() && resource.data.keys().hasAll(['displayName', 'role']));
       // Username optional on create (Google / legacy); editable later from profile.
       allow create: if isSelf(userId)
@@ -53,7 +78,7 @@ service cloud.firestore {
           'uid', 'email', 'displayName', 'role', 'createdAt'
         ])
         && request.resource.data.uid == userId
-        && request.resource.data.role in ['student', 'teacher']
+        && request.resource.data.role in ['student', 'teacher', 'parent']
         && (
           !('roles' in request.resource.data)
           || validRolesList(request.resource.data.roles)
@@ -66,7 +91,7 @@ service cloud.firestore {
       allow update: if isSelf(userId)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
-        && request.resource.data.role in ['student', 'teacher']
+        && request.resource.data.role in ['student', 'teacher', 'parent']
         && (
           !('roles' in request.resource.data)
           || validRolesList(request.resource.data.roles)
@@ -75,11 +100,11 @@ service cloud.firestore {
           !('username' in request.resource.data)
           || validUsername(request.resource.data.username)
         );
-      allow delete: if false;
+      allow delete: if isSelf(userId);
 
-      // Own activity timeline (append-only). Parent read of linked students is future work.
+      // Own activity timeline (append-only). Linked parents may read.
       match /activity/{eventId} {
-        allow read: if isSelf(userId);
+        allow read: if isSelf(userId) || linkedParentOf(userId);
         allow create: if isSelf(userId)
           && request.resource.data.keys().hasAll(['kind', 'title', 'at', 'dedupeKey'])
           && request.resource.data.kind is string
@@ -91,8 +116,55 @@ service cloud.firestore {
         allow update: if isSelf(userId)
           && request.resource.data.dedupeKey == resource.data.dedupeKey
           && request.resource.data.kind == resource.data.kind;
-        allow delete: if false;
+        allow delete: if isSelf(userId);
       }
+    }
+
+    // Private family codes — owner read/write; parents never list/read others' codes.
+    // Link create validates via get() in parentLinks rules.
+    match /familyCodes/{uid} {
+      allow read: if isSelf(uid);
+      allow create, update: if isSelf(uid)
+        && request.resource.data.keys().hasAll(['uid', 'code', 'rotatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.code is string
+        && request.resource.data.code.size() >= 6
+        && request.resource.data.code.size() <= 16
+        && request.resource.data.rotatedAt is int;
+      allow delete: if isSelf(uid);
+    }
+
+    match /parentLinks/{linkId} {
+      allow read: if signedIn()
+        && (resource.data.parentUid == request.auth.uid
+          || resource.data.studentUid == request.auth.uid);
+      allow create: if signedIn()
+        && parentHasDateOfBirth()
+        && request.resource.data.parentUid == request.auth.uid
+        && request.resource.data.createdByParentUid == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'linkId', 'parentUid', 'studentUid', 'studentUsername',
+          'createdAt', 'createdByParentUid', 'familyCode'
+        ])
+        && request.resource.data.linkId == linkId
+        && linkId == request.auth.uid + '_' + request.resource.data.studentUid
+        && request.resource.data.studentUid is string
+        && request.resource.data.studentUid != request.auth.uid
+        && request.resource.data.studentUsername is string
+        && request.resource.data.createdAt is int
+        && request.resource.data.familyCode is string
+        && exists(/databases/$(database)/documents/familyCodes/$(request.resource.data.studentUid))
+        && get(/databases/$(database)/documents/familyCodes/$(request.resource.data.studentUid)).data.code
+          == request.resource.data.familyCode
+        && exists(/databases/$(database)/documents/users/$(request.resource.data.studentUid))
+        && !(
+          'roles' in get(/databases/$(database)/documents/users/$(request.resource.data.studentUid)).data
+          && get(/databases/$(database)/documents/users/$(request.resource.data.studentUid)).data.roles.hasOnly(['parent'])
+        );
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.parentUid == request.auth.uid
+          || resource.data.studentUid == request.auth.uid);
     }
 
     match /usernames/{username} {
@@ -116,7 +188,8 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['uid', 'createdAt'])
         && request.resource.data.uid == request.auth.uid
         && email == request.auth.token.email.lower();
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /inviteCodes/{code} {
@@ -156,6 +229,7 @@ service cloud.firestore {
           || isClassroomTeacher(classroomId)
         );
         allow create: if signedIn()
+          && !isParentOnlyAccount()
           && request.auth.uid == memberId
           && request.resource.data.keys().hasAll(['uid', 'role', 'displayName', 'joinedAt'])
           && request.resource.data.uid == memberId
@@ -198,6 +272,7 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if signedIn();
       allow create: if signedIn()
+        && !isParentOnlyAccount()
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.keys().hasAll([
           'name', 'createdBy', 'chairId', 'currentStatus', 'createdAt', 'settings', 'speakerQueue'
@@ -230,6 +305,7 @@ service cloud.firestore {
       match /participants/{userId} {
         allow read: if signedIn();
         allow create: if signedIn()
+          && !isParentOnlyAccount()
           && request.auth.uid == userId
           && request.resource.data.keys().hasAll([
             'userId', 'displayName', 'role', 'raisedPlacard', 'joinedAt'
@@ -301,7 +377,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userCount', 'updatedAt'])
         && request.resource.data.userCount is int
         && request.resource.data.updatedAt is number
-        && request.resource.data.userCount == resource.data.userCount + 1;
+        && (
+          request.resource.data.userCount == resource.data.userCount + 1
+          || (
+            request.resource.data.userCount == resource.data.userCount - 1
+            && request.resource.data.userCount >= 0
+          )
+        );
       allow delete: if false;
     }
   }

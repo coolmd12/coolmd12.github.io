@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { ActivityTimeline } from '../components/ActivityTimeline';
 import { CommitteeRoomList } from '../components/CommitteeRoom/CommitteeRoomList';
 import { InviteCodeShare } from '../components/InviteCodeShare';
@@ -24,7 +24,7 @@ import {
 } from '../services/rooms';
 import { isRoomClosed } from '../services/committeeRoomLogic';
 import type { ActivityEvent } from '../types/activity';
-import { canTeach, type Classroom } from '../types';
+import { canTeach, isParentOnly, type Classroom } from '../types';
 
 export function DashboardPage() {
   const { profile, refreshProfile } = useAuth();
@@ -225,6 +225,10 @@ export function DashboardPage() {
       return 'No classrooms yet. Create your first classroom, or join another room with an invite code.';
     }
     return 'No classrooms yet. Ask your teacher for an invite code to join.';
+  }
+
+  if (profile && isParentOnly(profile)) {
+    return <Navigate to="/family" replace />;
   }
 
   return (

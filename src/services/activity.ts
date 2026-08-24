@@ -10,6 +10,7 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import type { ActivityEvent, ActivityKind, ActivityUsageStats } from '../types/activity';
 import type { Classroom, UserProfile } from '../types';
+import type { MonthlyActivitySummary } from '../types/parent';
 import { isRoomClosed } from './committeeRoomLogic';
 import type { MyCommitteeRoom } from './rooms';
 
@@ -190,5 +191,73 @@ export function computeActivityUsage(
     roomsJoined,
     classrooms: classrooms.length,
     totalEvents: events.length,
+  };
+}
+
+/** Usage chips when the parent only has the student's activity log (no room list). */
+export function computeActivityUsageFromEvents(events: ActivityEvent[]): ActivityUsageStats {
+  return {
+    roomsHosted: events.filter((e) => e.kind === 'room_created').length,
+    roomsJoined: events.filter((e) => e.kind === 'room_joined').length,
+    classrooms: events.filter(
+      (e) => e.kind === 'classroom_created' || e.kind === 'classroom_joined',
+    ).length,
+    totalEvents: events.length,
+  };
+}
+
+export function buildMonthlyActivitySummary(
+  events: ActivityEvent[],
+  year: number,
+  month: number,
+): MonthlyActivitySummary {
+  const monthEvents = events.filter((e) => {
+    const d = new Date(e.at);
+    return d.getFullYear() === year && d.getMonth() + 1 === month;
+  });
+
+  const roomsHosted = monthEvents.filter((e) => e.kind === 'room_created').length;
+  const roomsJoined = monthEvents.filter((e) => e.kind === 'room_joined').length;
+  const roomsClosed = monthEvents.filter((e) => e.kind === 'room_closed').length;
+  const classroomsCreated = monthEvents.filter((e) => e.kind === 'classroom_created').length;
+  const classroomsJoined = monthEvents.filter((e) => e.kind === 'classroom_joined').length;
+
+  const label = new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const bullets: string[] = [];
+  if (monthEvents.length === 0) {
+    bullets.push('No recorded activity this month.');
+  } else {
+    bullets.push(`${monthEvents.length} activity moment${monthEvents.length === 1 ? '' : 's'} logged.`);
+    if (roomsHosted) bullets.push(`Hosted ${roomsHosted} committee room${roomsHosted === 1 ? '' : 's'}.`);
+    if (roomsJoined) bullets.push(`Joined ${roomsJoined} committee room${roomsJoined === 1 ? '' : 's'}.`);
+    if (roomsClosed) bullets.push(`Closed ${roomsClosed} room${roomsClosed === 1 ? '' : 's'}.`);
+    if (classroomsCreated) {
+      bullets.push(`Created ${classroomsCreated} classroom${classroomsCreated === 1 ? '' : 's'}.`);
+    }
+    if (classroomsJoined) {
+      bullets.push(`Joined ${classroomsJoined} classroom${classroomsJoined === 1 ? '' : 's'}.`);
+    }
+    const named = monthEvents
+      .filter((e) => e.detail?.trim())
+      .slice(0, 5)
+      .map((e) => `${e.title}${e.detail ? ` — ${e.detail}` : ''}`);
+    for (const line of named) bullets.push(line);
+  }
+
+  return {
+    year,
+    month,
+    label,
+    totalEvents: monthEvents.length,
+    roomsHosted,
+    roomsJoined,
+    roomsClosed,
+    classroomsCreated,
+    classroomsJoined,
+    bullets,
   };
 }

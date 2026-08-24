@@ -67,8 +67,8 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | Email/password + Resend codes | Parked | Removed from UI; Worker kept for later. |
 | Live committee floor | Phase 2 floor done | Speakers, timer, motions, gavel (real sample), chat, session start/stop, audio cues. |
 | Dashboard Your activity | Done | Horizontal timeline + usage chips; live log + backfill from rooms/classrooms. |
-| Parent / guardian accounts | Parked | Link to students; read-only activity — see § Future Feature Ideas. |
-| AI tools (Gemini) + prep Q&A assistant | Not built | Phase 3. |
+| Parent / guardian portal | Done (V1) | Parent-only; `/family`; family-code link; activity + monthly summaries. |
+| AI tools (Gemini) + prep Q&A assistant | Not built | Phase 3 (after parent V1). |
 | Conference filters | Not built | Phase 4. |
 | Tutorials / inbox / drafting / notes | Not built | Phase 5. |
 | In-app calling (voice/video) | Not built — Later | Meet/Zoom links until then. |
@@ -158,7 +158,28 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [x] Dashboard **Your activity** horizontal timeline with colored dots + usage chips
 - [x] Merge live logs with backfill from rooms/classrooms (deduped)
 
-**Parent note:** When parent accounts ship, they will read linked students’ activity from the same collection (read-only). Not built yet.
+**Parent note:** Parent accounts read linked students’ activity from the same collection (read-only). See Phase 2.6.
+
+### Phase 2.6 — Parent / guardian portal ⬅️ V1 done
+
+**Goal:** Parent-only accounts can link to students and monitor practice activity without joining rooms as the child.
+
+**Locked V1 decisions:**
+
+- Parent-only (`roles: ['parent']`); multi-role later.
+- Parent-initiated link: `@username` + student **family code** (no Approve/Deny).
+- `/family`: linked kids → activity timeline + usage chips + **rule-based monthly summaries**.
+- 18+ via **date of birth** on the parent profile (no ID upload / attestation checkbox).
+- Cap ~5 links per parent. Parents do not see chat / room floor / classroom rosters.
+- UX modeled loosely on school **parent portals** (e.g. Aeries): select a student → view their practice activity.
+
+**Build:**
+
+- [x] `parent` role + Firestore `parentLinks` + family code on student profile
+- [x] Parent onboarding + date of birth (18+)
+- [x] Student Profile: show / copy / rotate family code
+- [x] `/family` Parent portal UI: link, list, timeline, monthly summary
+- [x] Nav + guards (Parent portal link; hide teacher create for parent-only)
 
 ### Phase 3 — AI integration
 
@@ -239,12 +260,10 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Prep notes & documents:** personal (and optionally classroom-shared) notes — write on the spot, and/or attach or link Google Docs, Slides, PDFs, and similar for conference prep.
 - **Built-in AI prep assistant:** in-app Q&A that answers general questions and finds prep resources/websites; **does not edit** user work (speeches, resolutions, notes, position papers).
 - **In-app calling:** voice/video inside committee rooms so Meet/Zoom is optional, not required (Phase 6).
-- **Parent / guardian accounts (parked):**
-  - Add `parent` to account `roles[]` (multi-role still allowed).
-  - Parent **links** to one or more student accounts (invite/code or student-approved link — UX TBD).
-  - Parent views **linked student activity** (dashboard-style timeline / usage) **read-only** — cannot chair rooms or edit student work.
-  - Privacy: student consent required; no access to unrelated classrooms/rooms.
-  - Build after student/teacher own-activity (done); not a Phase 3 blocker.
+- **Parent / guardian portal (V1 building; later parked):**
+  - V1: parent-only; parent-initiated `@username` + family code; `/family` Parent portal activity + monthly summaries; date of birth (18+).
+  - Later: multi-role parent+student/teacher; stronger identity checks; richer visibility; AI summary narratives.
+  - Parents cannot chair rooms or edit student work; no chat/room floor in V1.
 
 ---
 
@@ -253,10 +272,10 @@ Two future product lanes will expand the platform beyond basic classroom practic
 1. ~~Google Sign-In for public users (no paid Resend domain)~~ **Done**
 2. ~~Finish role-aware UX + multi-role accounts (Phase 1.6)~~ **Done**
 3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio cues, delegate actions) — more UX polish anytime
-4. ~~Dashboard Your activity timeline~~ **Done** (parent role still parked)
-5. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops
-6. **Phase 6** in-app calling (after the floor is solid)
-7. Parent / guardian linking (after activity is trusted) · Photos when Blaze is OK · optional revive email-code signup
+4. ~~Dashboard Your activity timeline~~ **Done**
+5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**
+6. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops
+7. **Phase 6** in-app calling · Photos when Blaze is OK · optional revive email-code signup · parent multi-role / stronger identity
 
 ---
 
@@ -272,6 +291,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Username:** Discord-style unique handle, locked after signup. Display name is editable.
 - **Private classrooms:** No public lobbies or social features.
 - **Founder Stats:** `/admin` (“Founder's Stats”) is hard-locked to `dhyanvim@gmail.com` in the UI and Firestore read rules. Exact Auth roster stays in Firebase Console.
+- **Parent portal V1:** Parent-only accounts; link via student family code; `/family` is an Aeries-style read-only activity portal + rule-based monthly summaries; parents set **date of birth** (must be 18+; no ID upload).
 
 ---
 

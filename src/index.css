@@ -450,6 +450,35 @@ textarea {
   width: min(520px, 100%);
 }
 
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.profile-page .profile-panel,
+.profile-page .family-code-panel,
+.profile-page .profile-danger-panel {
+  align-self: center;
+}
+
+.profile-page .page-header {
+  margin-bottom: 0;
+}
+
+.profile-danger-panel {
+  margin-top: 1.25rem;
+  border-color: rgba(180, 35, 24, 0.35);
+}
+
+.profile-danger-panel h2 {
+  color: #912018;
+}
+
+.profile-danger-panel .btn-danger {
+  margin-top: 0.5rem;
+}
+
 .committee-room-page .panel {
   display: flex;
   flex-direction: column;
@@ -931,6 +960,17 @@ textarea {
 .btn-secondary:hover:not(:disabled) {
   border-color: rgba(0, 158, 219, 0.35);
   color: var(--un-blue-deep);
+}
+
+.btn-danger {
+  background: #b42318;
+  color: #fff;
+  border-color: #912018;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #912018;
+  border-color: #7a1a12;
 }
 
 .btn-ghost {
@@ -2302,7 +2342,8 @@ textarea:focus {
   color: var(--muted);
 }
 
-.role-grid {
+.role-grid,
+.role-cards {
   display: grid;
   gap: 0.65rem;
   margin-top: 0.65rem;
@@ -2591,3 +2632,185 @@ textarea:focus {
     left: 1.1rem;
   }
 }
+
+/* —— Parent Family portal —— */
+.family-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.family-portal-layout {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .family-portal-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.family-students-panel {
+  width: 100%;
+}
+
+.family-add-student {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.family-add-student h3 {
+  margin: 0 0 0.35rem;
+}
+
+.family-student-detail {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.family-detail-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--navy);
+}
+
+.family-detail-head .muted {
+  margin: 0.2rem 0 0;
+}
+
+.family-panel {
+  width: min(640px, 100%);
+}
+
+.family-students-panel.family-panel {
+  width: 100%;
+}
+
+.family-summary-panel {
+  width: 100%;
+}
+
+.family-link-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.family-student-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.family-student-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.family-student-btn {
+  flex: 1;
+  min-width: 12rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.family-student-btn strong {
+  color: var(--navy);
+}
+
+.family-student-btn span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.family-student-btn.selected {
+  border-color: rgba(196, 163, 90, 0.65);
+  box-shadow: var(--shadow-soft);
+  background: linear-gradient(135deg, #fff, #f7f1e4);
+}
+
+.family-summary-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: end;
+  margin: 0.75rem 0 1rem;
+}
+
+.family-summary-controls label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 8rem;
+}
+
+.family-summary-result {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.family-summary-result ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.family-code-panel {
+  margin-top: 1.25rem;
+  width: min(520px, 100%);
+}
+
+.family-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin: 0.85rem 0;
+}
+
+.family-code-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(196, 163, 90, 0.7);
+  background: #fbf8f1;
+  color: var(--navy);
+}
+
+.linked-parents {
+  margin-top: 1.25rem;
+}
+
+.linked-parents ul {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.linked-parents li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
