@@ -31,6 +31,7 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Profile **photos** (Firebase Storage) | Paused — needs Blaze; initials for now |
 | Email/password + Resend verification codes | Parked — not in UI (needs paid/verified sending domain) |
 | Parent / guardian portal (`/family`) | Done (V1) — parent-only; link via `@username` + family code; activity + monthly summaries |
+| Student **My progress** (`/progress`) | Done — own timeline + monthly summaries (same spirit as parent portal) |
 | Dashboard **Your activity** timeline | Done — hosted/joined rooms, classrooms, usage chips |
 | Live committee room (speakers, motions, timers, chat) | Phase 2 done — core floor, chat, session start/stop, audio cues |
 | AI practice + prep Q&A assistant (Gemini) | Later (Phase 3) |
@@ -128,7 +129,7 @@ Do **not** commit `.env.local` or secrets.
 
 | Path | Purpose |
 | --- | --- |
-| `src/pages/` | Screens (landing, auth, welcome, dashboard, rooms, admin, …) |
+| `src/pages/` | Screens (landing, auth, welcome, dashboard, progress, rooms, admin, family, …) |
 | `src/services/` | Auth, classrooms, rooms, motions, messages, activity, stats |
 | `src/contexts/AuthContext.tsx` | Signed-in user + profile |
 | `workers/email-verification/` | Parked Cloudflare Worker for email codes |
@@ -151,18 +152,22 @@ GoMUN is expanding into two complementary product lanes:
 A dedicated operations workspace for chairs to track delegate registration, committee assignments, resolutions, amendments, voting records, and awards for physical MUN events.
 
 ### Smart Research Simulation Tools
+Extra help for MUN people — **structure and procedure, not ghostwriting** (no plagiarism / no writing their papers for them):
 - **Interactive Clause Builders:** guided forms for operative verbs, sub-clauses, and funding mechanisms that output properly formatted UN draft language (**resolution formatting**).
 - **Country Stance Aggregator:** quick-reference dashboards that pull open-source UN data, voting records, and policy summaries for beginner delegates.
 - **Procedural / Rules-of-Procedure cheat sheets:** customizable tools that let clubs generate downloadable "Scripts of Motions" for their preferred rules (for example, UNA-USA or THIMUN).
-- **Position paper drafting tools:** structured prompts and templates to help delegates outline and draft position papers (user owns the writing; tools guide format and structure).
+- **Position paper drafting tools:** structured prompts and templates to help delegates outline and draft position papers (user owns every sentence; tools guide format and structure only).
 
 ### Prep notes & documents
 A personal (and optionally classroom-shared) notes space where users can:
-- **Link or attach** prep materials — Google Docs, Slides, PDFs, and similar
-- **Write notes on the spot** for future reference without uploading an existing file
+- **Link or attach** prep materials — Google Docs, Slides, PDFs, and similar (not upload-only)
+- **Write notes on the spot** for future reference when they don’t want to bring an existing document
 
 ### Built-in AI prep assistant (not an editor)
-An in-app AI (planned with Gemini in Phase 3) that users can ask questions of and get **resources** from — e.g. find helpful websites for research, answer general MUN / procedure / topic questions. **It will not edit the user’s work** (speeches, resolutions, notes); it points people to prep help and explains concepts.
+An in-app AI (planned with Gemini in Phase 3) that users can ask questions of and get **resources** from — e.g. find helpful websites for research, answer general MUN / procedure / topic questions. **It will not edit or rewrite the user’s work** (speeches, resolutions, position papers, notes) — anti-plagiarism stance: prep help and explanations only, never copy-paste deliverables.
+
+### Appearance themes (parked)
+User-selectable color themes later — default **light** (current direction), optional **dark**, optional **warm / gold-accent** or high-contrast. Same layout and GoMUN brand; token swap only. Do not force dark mode.
 
 ### In-app calling (Phase 6)
 Optional voice (then video) **inside** a live committee room so clubs don’t *have* to open Meet/Zoom. The procedure floor stays primary; calling is an add-on. External Meet/Zoom links remain as a fallback. Cost / media-server choices TBD when we reach Phase 6.
@@ -177,8 +182,10 @@ Optional voice (then video) **inside** a live committee room so clubs don’t *h
 | [README.md](./README.md) | Setup + how the app works today |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next |
 
-**Next major build:** Phase 3+ (AI, conferences, learning tools), then Phase 6 in-app calling. Parent portal V1 is shipped (DOB, not ID attestation); multi-role later. Room UX can keep getting small polish anytime.
+**Next major build:** Parent portal reliability + student `/progress` (this track), then Phase 3 AI (deferred — Gemini backend TBD; stay on Spark / free tier), then Phase 4–5, then Phase 6 in-app calling. Parent portal V1 is shipped (DOB, not ID attestation); multi-role later. Room UX can keep getting small polish anytime.
+
+**Parent / student progress:** Parent linked-child activity load hardened (member-doc classroom backfill; no silent wipe). Students have **My progress** at `/progress` (timeline + monthly summaries). See [ROADMAP.md](./ROADMAP.md) § Phase 2.6.
 
 Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms (Phase 3) and hybrid rooms (live + AI). These room types are planned to be free and integrated with classroom and dashboard flows.
 
-**Far future (not scheduled):** Speech & Debate practice on the same site — same free / classroom-private spirit as MUN. See [ROADMAP.md](./ROADMAP.md) open ideas.
+**Far future (not scheduled):** Speech & Debate practice on the same site — same free / classroom-private spirit as MUN. Also parked: user-selectable **appearance themes** (light default, dark, optional warm/gold accent). See [ROADMAP.md](./ROADMAP.md).

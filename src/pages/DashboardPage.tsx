@@ -264,6 +264,9 @@ export function DashboardPage() {
         stats={activityStats}
         loading={activityLoading || roomsLoading || loading}
       />
+      <p className="muted activity-progress-link">
+        <Link to="/progress">Open My progress</Link> for the full timeline and monthly summaries.
+      </p>
 
       {createdRoom ? (
         <div className="panel invite-created">
