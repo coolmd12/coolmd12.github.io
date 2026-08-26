@@ -78,6 +78,8 @@ export async function createClassroom(input: {
     displayName: input.teacher.displayName,
     role: 'teacher',
     joinedAt: Date.now(),
+    classroomName: classroom.name,
+    classroomCreatedAt: classroom.createdAt,
     ...(input.teacher.photoURL ? { photoURL: input.teacher.photoURL } : {}),
   } satisfies ClassroomMember);
 
@@ -111,6 +113,11 @@ export async function joinClassroomByCode(
   const memberSnap = await getDoc(memberRef);
 
   if (!memberSnap.exists()) {
+    const classroomSnap = await getDoc(classroomRef);
+    if (!classroomSnap.exists()) {
+      throw new Error('This classroom no longer exists.');
+    }
+    const classroomData = classroomSnap.data() as Omit<Classroom, 'id'>;
     const batch = writeBatch(database);
     // Joining another room = delegate seat. Account teacher capability does not
     // make you the room owner (owner remains classroom.teacherId).
@@ -119,6 +126,8 @@ export async function joinClassroomByCode(
       displayName: user.displayName,
       role: 'student',
       joinedAt: Date.now(),
+      classroomName: classroomData.name,
+      classroomCreatedAt: classroomData.createdAt,
       ...(user.photoURL ? { photoURL: user.photoURL } : {}),
     } satisfies ClassroomMember);
     batch.update(classroomRef, { memberCount: increment(1) });
