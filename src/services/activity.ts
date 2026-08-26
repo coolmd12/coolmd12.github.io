@@ -1,8 +1,6 @@
 import {
   collection,
-  collectionGroup,
   doc,
-  documentId,
   getDoc,
   getDocs,
   onSnapshot,
@@ -200,33 +198,46 @@ export async function syncActivityBackfillToFirestore(input: {
   );
 }
 
-/** Classrooms a linked parent can reconstruct from membership docs (no classroom doc read). */
-async function listClassroomsFromMembership(studentUid: string): Promise<Classroom[]> {
+/**
+ * Classrooms a linked parent can reconstruct from membership docs (no classroom root read).
+ * Iterates profile.classroomIds → getDoc(members/{studentUid}), which rules already allow
+ * via linkedParentOf(memberId). Avoids broken collectionGroup + bare documentId() queries.
+ */
+async function listClassroomsFromMembership(
+  studentUid: string,
+  classroomIds: string[],
+): Promise<Classroom[]> {
   const database = requireDb();
-  const snap = await getDocs(
-    query(collectionGroup(database, 'members'), where(documentId(), '==', studentUid)),
+  const ids = [...new Set(classroomIds.filter(Boolean))];
+  const results = await Promise.all(
+    ids.map(async (classroomId) => {
+      try {
+        const memberSnap = await getDoc(
+          doc(database, 'classrooms', classroomId, 'members', studentUid),
+        );
+        if (!memberSnap.exists()) return null;
+        const data = memberSnap.data() as {
+          classroomName?: string;
+          classroomCreatedAt?: number;
+          joinedAt?: number;
+          role?: string;
+        };
+        if (!data.classroomName) return null;
+        return {
+          id: classroomId,
+          name: data.classroomName,
+          teacherId: data.role === 'teacher' ? studentUid : '',
+          teacherName: '',
+          inviteCode: '',
+          createdAt: data.classroomCreatedAt ?? data.joinedAt ?? Date.now(),
+          memberCount: 0,
+        } satisfies Classroom;
+      } catch {
+        return null;
+      }
+    }),
   );
-  const byId = new Map<string, Classroom>();
-  for (const memberDoc of snap.docs) {
-    const classroomId = memberDoc.ref.parent.parent?.id;
-    if (!classroomId) continue;
-    const data = memberDoc.data() as {
-      classroomName?: string;
-      classroomCreatedAt?: number;
-      joinedAt?: number;
-    };
-    if (!data.classroomName) continue;
-    byId.set(classroomId, {
-      id: classroomId,
-      name: data.classroomName,
-      teacherId: '',
-      teacherName: '',
-      inviteCode: '',
-      createdAt: data.classroomCreatedAt ?? data.joinedAt ?? Date.now(),
-      memberCount: 0,
-    });
-  }
-  return [...byId.values()];
+  return results.filter((c): c is Classroom => c !== null);
 }
 
 /** Classrooms hosted by the student (readable when parent is linked). */
@@ -247,30 +258,50 @@ async function fetchStudentProfile(uid: string): Promise<UserProfile | null> {
 
 /** Merge Firestore log with room/classroom history (same shape as the student dashboard). */
 export async function loadStudentActivityView(studentUid: string): Promise<ActivityEvent[]> {
-  const profile = await fetchStudentProfile(studentUid);
+  let profile: UserProfile | null = null;
+  try {
+    profile = await fetchStudentProfile(studentUid);
+  } catch (err) {
+    console.warn('Student profile read failed', err);
+    throw err;
+  }
   if (!profile) return [];
 
-  const [live, rooms] = await Promise.all([
-    listActivityLog(studentUid),
-    fetchCommitteeRoomsForUser(studentUid),
-  ]);
+  // Isolate each source so one permission-denied query cannot blank the whole portal.
+  const live = await listActivityLog(studentUid).catch((err) => {
+    console.warn('Activity log read failed', err);
+    return [] as ActivityEvent[];
+  });
+  const rooms = await fetchCommitteeRoomsForUser(studentUid).catch((err) => {
+    console.warn('Committee rooms backfill failed', err);
+    return [] as MyCommitteeRoom[];
+  });
 
+  // Parents usually cannot query classroom root docs (only teacherId link). Prefer member docs.
   let classrooms: Classroom[] = [];
   try {
-    classrooms = await listUserClassrooms(profile.classroomIds || []);
-  } catch {
-    // Parent accounts may lack direct classroom doc reads — fall back below.
-  }
-  if (!classrooms.length) {
     const [fromMembership, hosted] = await Promise.all([
-      listClassroomsFromMembership(studentUid),
-      listClassroomsHostedByStudent(studentUid),
+      listClassroomsFromMembership(studentUid, profile.classroomIds || []),
+      listClassroomsHostedByStudent(studentUid).catch(() => [] as Classroom[]),
     ]);
     const byId = new Map<string, Classroom>();
     for (const room of [...fromMembership, ...hosted]) {
       byId.set(room.id, room);
     }
     classrooms = [...byId.values()];
+  } catch (err) {
+    console.warn('Classroom activity backfill failed', err);
+    classrooms = [];
+  }
+
+  // If membership path found nothing and the viewer can read classroom docs (the student),
+  // fall back to the normal classroom list.
+  if (!classrooms.length && (profile.classroomIds?.length ?? 0) > 0) {
+    try {
+      classrooms = await listUserClassrooms(profile.classroomIds || []);
+    } catch {
+      // Parent / restricted viewers — keep empty classrooms.
+    }
   }
 
   const backfill = backfillActivityEvents({ profile, rooms, classrooms });

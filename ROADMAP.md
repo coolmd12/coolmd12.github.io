@@ -24,6 +24,7 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 - **Privacy:** Classrooms are private; no public lobbies. No social graph.
 - **Ease of use:** Simple UI/UX for common MUN flows. Fast, low friction.
 - **Education-first:** Tools help students learn, teachers teach.
+- **Integrity / no plagiarism:** Prep and AI tools support learning — structure, format guidance, resources, and Q&A. They must **not** write, rewrite, or ghost-edit speeches, resolutions, position papers, or notes for the user. The delegate owns the words.
 - **Scalability:** Built on serverless (Firebase) for low ops burden.
 - **Security:** Robust auth, data integrity.
 
@@ -68,7 +69,8 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | Live committee floor | Phase 2 floor done | Speakers, timer, motions, gavel (real sample), chat, session start/stop, audio cues. |
 | Dashboard Your activity | Done | Horizontal timeline + usage chips; live log + backfill from rooms/classrooms. |
 | Parent / guardian portal | Done (V1) | Parent-only; `/family`; family-code link; activity + monthly summaries. |
-| AI tools (Gemini) + prep Q&A assistant | Not built | Phase 3 (after parent V1). |
+| Student My progress | Done | `/progress` — own timeline + monthly summaries. |
+| AI tools (Gemini) + prep Q&A assistant | Not built — deferred | Phase 3 after progress track; backend TBD (stay free / Spark). |
 | Conference filters | Not built | Phase 4. |
 | Tutorials / inbox / drafting / notes | Not built | Phase 5. |
 | In-app calling (voice/video) | Not built — Later | Meet/Zoom links until then. |
@@ -180,15 +182,24 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [x] Student Profile: show / copy / rotate family code
 - [x] `/family` Parent portal UI: link, list, timeline, monthly summary
 - [x] Nav + guards (Parent portal link; hide teacher create for parent-only)
+- [x] Parent activity load hardened — member-doc classroom backfill; isolate classroom failures so rooms + live log still show; clear UI on student switch + error banners
+- [x] Student **My progress** (`/progress`) — own timeline + monthly summaries; nav + dashboard link
 
-### Phase 3 — AI integration
+**Later (still parked):**
 
-**Goal:** Provide AI-powered feedback, training, and a prep Q&A assistant.
+- Parent multi-role; stronger identity checks; richer visibility; AI-written summary narratives
+- Phase 3 AI deferred until a free/Spark-friendly Gemini path is chosen
+
+### Phase 3 — AI integration ⬅️ deferred (after progress track)
+
+**Goal:** Provide AI-powered feedback, training, and a prep Q&A assistant — always as **help for prep**, never as a plagiarism / ghostwriting engine.
+
+**Integrity boundary (locked):** The AI may answer general questions, explain procedure, and **find prep websites / resources**. It may give high-level feedback (e.g. “your speech is unclear on X”) in practice modes. It must **not** draft, rewrite, or paste-ready-edit the user’s speeches, resolutions, position papers, or notes.
 
 **Build:**
 
-- [ ] AI feedback on speeches (grammar, coherence, style)
-- [ ] AI-generated research briefs for topics
+- [ ] AI feedback on speeches (grammar, coherence, style) — coaching only; no auto-rewrite of the user’s text
+- [ ] AI-generated research briefs for topics (background / pointers — not copy-paste position papers)
 - [ ] AI-powered delegate roles (practice solo)
 - [ ] **Built-in AI prep assistant** — ask general MUN / procedure / topic questions; suggest prep websites and resources
 - [ ] Explicit boundary: assistant **finds resources and answers questions**; it does **not** edit the user’s speeches, resolutions, position papers, or notes
@@ -211,15 +222,15 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 
 ### Phase 5 — Research tools & learning
 
-**Goal:** Add beginner-friendly research, drafting, notes, and procedural support.
+**Goal:** Extra MUN help for delegates — procedure, formatting, drafting structure, and personal notes — without doing the academic work for them.
 
 **Build:**
 
-- [ ] Interactive Clause Builders (resolution formatting)
+- [ ] Interactive Clause Builders (resolution **formatting** guides — user still writes substance)
 - [ ] Country Stance Aggregator
 - [ ] Procedural / Rules-of-Procedure cheat sheets ("Scripts of Motions")
-- [ ] Position paper drafting tools (templates / guided structure; user writes the content)
-- [ ] Prep notes workspace — write notes in-app **and** link/upload Docs, Slides, PDFs for later reference
+- [ ] Position paper drafting tools (templates / guided structure / outlines; **user writes the content** — no AI ghostwriting)
+- [ ] Prep notes workspace — **write notes on the spot** in-app **and** link or attach existing Google Docs, Slides, PDFs (not upload-only)
 - [ ] In-app tutorials for MUN procedures
 - [ ] Teacher inbox for student submissions/questions
 - [ ] Basic admin dashboard (user/classroom management)
@@ -252,16 +263,23 @@ Two future product lanes will expand the platform beyond basic classroom practic
     - Resolution and amendment tracking.
     - Voting record compilation and analysis.
     - Awards and recognition tracking.
-- **Smart Research Simulation Tools:**
+- **Smart Research Simulation Tools** (structure & procedure help — not ghostwriting):
     - **Interactive Clause Builders:** interactive forms that prompt users for operative verbs, sub-clauses, and funding mechanisms to output properly formatted UN draft language (**resolution formatting**).
     - **Country Stance Aggregator:** quick-reference dashboards that pull open-source UN data, voting records, and basic policy summaries for beginners.
     - **Procedural / Rules-of-Procedure cheat sheets:** a customizable tool where a club can select its preferred rules (for example, UNA-USA or THIMUN) and generate a single-page downloadable "Script of Motions".
-    - **Position paper drafting tools:** guided templates and structure for drafting position papers without the AI rewriting the student’s voice.
-- **Prep notes & documents:** personal (and optionally classroom-shared) notes — write on the spot, and/or attach or link Google Docs, Slides, PDFs, and similar for conference prep.
-- **Built-in AI prep assistant:** in-app Q&A that answers general questions and finds prep resources/websites; **does not edit** user work (speeches, resolutions, notes, position papers).
+    - **Position paper drafting tools:** guided templates and structure for drafting position papers; student writes every sentence; tools never rewrite their voice.
+- **Prep notes & documents:** personal (and optionally classroom-shared) notes space — **write on the spot** for future reference, **and/or** link or attach Google Docs, Slides, PDFs (not upload-only).
+- **Built-in AI prep assistant:** in-app Q&A that answers general questions and finds prep resources/websites; **does not edit** user work (speeches, resolutions, notes, position papers). Anti-plagiarism stance: help prep, don’t produce copy-paste deliverables.
+- **Appearance / color themes (parked — do when the time is right):**
+  - Default **light** theme (current product direction — bright auth stages, light app chrome, navy + gold accents).
+  - Optional **dark** theme for users who prefer it (not the forced default).
+  - Optional **warm / gold-accent** or high-contrast accessibility theme.
+  - Themes should share the same layout and brand signals; only tokens (backgrounds, surfaces, text, accents) swap.
 - **In-app calling:** voice/video inside committee rooms so Meet/Zoom is optional, not required (Phase 6).
-- **Parent / guardian portal (V1 building; later parked):**
+- **Parent / guardian portal (V1 shipped; progress follow-ups done):**
   - V1: parent-only; parent-initiated `@username` + family code; `/family` Parent portal activity + monthly summaries; date of birth (18+).
+  - Linked-child activity load hardened (member-doc classroom backfill; no silent wipe).
+  - **Student self-progress** at `/progress` (timeline + monthly summaries).
   - Later: multi-role parent+student/teacher; stronger identity checks; richer visibility; AI summary narratives.
   - Parents cannot chair rooms or edit student work; no chat/room floor in V1.
 
@@ -274,8 +292,9 @@ Two future product lanes will expand the platform beyond basic classroom practic
 3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio cues, delegate actions) — more UX polish anytime
 4. ~~Dashboard Your activity timeline~~ **Done**
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**
-6. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops
-7. **Phase 6** in-app calling · Photos when Blaze is OK · optional revive email-code signup · parent multi-role / stronger identity
+6. ~~Parent activity reliability + student `/progress`~~ **Done** (this track)
+7. Phase 3 AI (deferred — free/Spark path TBD) · Phase 4 conferences · Phase 5 learning/ops
+8. **Phase 6** in-app calling · Photos when Blaze is OK · optional revive email-code signup · parent multi-role / stronger identity
 
 ---
 
@@ -292,6 +311,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Private classrooms:** No public lobbies or social features.
 - **Founder Stats:** `/admin` (“Founder's Stats”) is hard-locked to `dhyanvim@gmail.com` in the UI and Firestore read rules. Exact Auth roster stays in Firebase Console.
 - **Parent portal V1:** Parent-only accounts; link via student family code; `/family` is an Aeries-style read-only activity portal + rule-based monthly summaries; parents set **date of birth** (must be 18+; no ID upload).
+- **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them.
 
 ---
 

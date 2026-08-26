@@ -61,10 +61,11 @@ Google proves the email; no Resend verification code in the current UI.
 | Chair session start/stop + room audio cues | Done |
 | Dashboard Your activity timeline | Done |
 | Further room UX polish | As needed |
-| Parent / guardian portal (`/family`) | Done (V1) | Parent-only; link via family code; activity + monthly summaries |
+| Parent / guardian portal (`/family`) | Done (V1) — family-code link; activity + monthly summaries |
+| Student My progress (`/progress`) | Done — own timeline + monthly summaries |
 | Profile photos (Storage) | Paused (Blaze) |
 | Email/password + Resend codes | Parked (needs verified sending domain) |
-| AI (Gemini) | Phase 3 |
+| AI (Gemini) | Phase 3 — deferred (free/Spark path TBD) |
 | Conference filters | Phase 4 |
 | Tutorials / inbox / drafting tools / notes | Phase 5 |
 | In-app calling (voice / video) | Phase 6 — later |
@@ -110,14 +111,15 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio)  
 4. ~~Dashboard Your activity~~ **Done**  
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**  
-6. Phase 3 AI · Phase 4 conferences · Phase 5 learning/ops  
-7. **Phase 6** in-app calling · Photos when Blaze is OK  
+6. ~~Parent activity reliability + student `/progress`~~ **Done**  
+7. Phase 3 AI (deferred) · Phase 4 conferences · Phase 5 learning/ops  
+8. **Phase 6** in-app calling · Photos when Blaze is OK  
 
 ---
 
 ## Open ideas (parked)
 
-Revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase)
+Revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase) · **appearance themes** (light default, optional dark / warm-gold)
 
 ### Parent / guardian accounts (V1 done; later parked)
 
@@ -131,11 +133,17 @@ Revive email-code signup (verified domain) · login with username · richer prof
 - Parents do **not** see chat, motions, room floor, or classroom rosters in V1.
 - UX: Aeries-like **Parent portal** — pick a linked student, view their practice activity / summaries.
 
-**Later:** multi-role; stronger identity checks; richer visibility; AI-written summary narratives.
+**Later (still parked):**
+
+- multi-role; stronger identity checks; richer visibility; AI-written summary narratives.
+
+**Shipped follow-ups:** Parent linked-child activity load hardened; students have **My progress** (`/progress`) with timeline + monthly summaries.
 
 ---
 
 ## Future Considerations
+
+Extra MUN help is welcome — **integrity first:** tools guide format/procedure and find resources; they do **not** ghostwrite or enable plagiarism. The user always owns the writing.
 
 - **Online conference practice:** real-time committee rooms for remote sessions and virtual practice rounds.
 - **In-person conference operations:** chair-facing tools for inputting and organizing MUN data from physical conferences.
@@ -143,10 +151,11 @@ Revive email-code signup (verified domain) · login with username · richer prof
   - Interactive Clause Builders / **resolution formatting**
   - Country Stance Aggregator
   - Procedural / **Rules-of-Procedure cheat sheets** ("Scripts of Motions")
-  - **Position paper drafting tools** (guided structure; user writes the content)
-- **Prep notes & documents:** write notes in-app **and** link/attach Google Docs, Slides, PDFs for later prep reference.
-- **Built-in AI prep assistant:** ask questions, get resource links and general answers — **does not edit** the user’s work.
+  - **Position paper drafting tools** (guided structure / templates; user writes every sentence)
+- **Prep notes & documents:** write notes **on the spot** in-app for later reference, **and/or** link/attach Google Docs, Slides, PDFs (not upload-only).
+- **Built-in AI prep assistant:** ask questions, get resource links and general answers — **does not edit** speeches, resolutions, position papers, or notes.
 - **In-app calling:** optional voice/video inside rooms (Phase 6); Meet/Zoom remains a fallback.
+- **Appearance themes (parked):** user-selectable color themes — at least a default **light** theme (current direction), a **dark** theme, and optionally a softer **warm / gold-accent** or high-contrast mode. Keep brand (navy + gold) recognizable across themes; don’t force dark UI.
 
 ---
 

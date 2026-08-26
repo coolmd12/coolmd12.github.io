@@ -27,6 +27,8 @@ export function FamilyPage() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(true);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [activityError, setActivityError] = useState('');
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
@@ -75,10 +77,18 @@ export function FamilyPage() {
     if (!selectedUid) {
       setEvents([]);
       setSummary(null);
+      setActivityError('');
+      setLastUpdatedAt(null);
+      setLoadingActivity(false);
       return;
     }
-    setLoadingActivity(true);
+
+    // Clear previous student's data immediately so a failed load never shows stale events.
+    setEvents([]);
     setSummary(null);
+    setActivityError('');
+    setLastUpdatedAt(null);
+    setLoadingActivity(true);
 
     let cancelled = false;
     async function refresh() {
@@ -86,10 +96,21 @@ export function FamilyPage() {
         const merged = await loadStudentActivityView(selectedUid!);
         if (!cancelled) {
           setEvents(merged);
+          setActivityError('');
+          setLastUpdatedAt(Date.now());
           setLoadingActivity(false);
         }
-      } catch {
-        if (!cancelled) setLoadingActivity(false);
+      } catch (err) {
+        if (!cancelled) {
+          setEvents([]);
+          const raw = err instanceof Error ? err.message : 'Could not load this student’s activity.';
+          setActivityError(
+            /insufficient permissions|permission-denied/i.test(raw)
+              ? 'Could not read this student’s activity (permissions). Ask them to open their Dashboard once, and make sure Firestore rules are published from firebase/firestore.rules.'
+              : raw,
+          );
+          setLoadingActivity(false);
+        }
       }
     }
 
@@ -175,6 +196,16 @@ export function FamilyPage() {
   function onGenerateSummary() {
     setSummary(buildMonthlyActivitySummary(events, summaryYear, summaryMonth));
   }
+
+  const lastUpdatedLabel =
+    lastUpdatedAt != null
+      ? new Date(lastUpdatedAt).toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : null;
 
   return (
     <main className="shell family-page">
@@ -295,12 +326,21 @@ export function FamilyPage() {
                     <div>
                       <h2>{selected.displayName}</h2>
                       <p className="muted">@{selected.username}</p>
+                      {lastUpdatedLabel && !loadingActivity ? (
+                        <p className="muted family-last-updated">Updated {lastUpdatedLabel}</p>
+                      ) : null}
                     </div>
                   </header>
 
+                  {activityError ? <p className="banner error">{activityError}</p> : null}
+
                   <ActivityTimeline
                     title="Practice activity"
-                    emptyMessage="No activity logged for this student yet."
+                    emptyMessage={
+                      activityError
+                        ? 'Activity could not be loaded. Try again in a moment.'
+                        : 'Linked successfully, but no practice activity yet. When they join rooms or classrooms (and open their dashboard), it will show up here.'
+                    }
                     events={[...events].sort((a, b) => a.at - b.at)}
                     stats={stats}
                     loading={loadingActivity}
@@ -357,8 +397,9 @@ export function FamilyPage() {
                 <section className="auth-panel family-panel">
                   <h2>Student overview</h2>
                   <p className="muted">
-                    Add or select a student on the left to see their practice timeline and monthly
-                    summaries.
+                    {linked.length === 0
+                      ? 'No students linked yet. Add one on the left with their @username and family code from Profile.'
+                      : 'Select a student on the left to see their practice timeline and monthly summaries.'}
                   </p>
                 </section>
               )}

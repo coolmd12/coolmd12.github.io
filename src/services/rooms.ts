@@ -214,15 +214,28 @@ export async function fetchCommitteeRoomsForUser(userId: string): Promise<MyComm
   if (!db) return [];
   const database = requireDb();
 
-  const [hostedSnap, joinedSnap] = await Promise.all([
-    getDocs(query(collection(database, 'rooms'), where('createdBy', '==', userId))),
-    getDocs(query(collectionGroup(database, 'participants'), where('userId', '==', userId))),
-  ]);
+  let hosted: Room[] = [];
+  let joinedIds: string[] = [];
 
-  const hosted = hostedSnap.docs.map((d) => ({ ...d.data(), roomId: d.id }) as Room);
-  const joinedIds = joinedSnap.docs
-    .map((d) => d.ref.parent.parent?.id)
-    .filter((id): id is string => Boolean(id));
+  try {
+    const hostedSnap = await getDocs(
+      query(collection(database, 'rooms'), where('createdBy', '==', userId)),
+    );
+    hosted = hostedSnap.docs.map((d) => ({ ...d.data(), roomId: d.id }) as Room);
+  } catch (err) {
+    console.warn('Hosted rooms fetch failed', err);
+  }
+
+  try {
+    const joinedSnap = await getDocs(
+      query(collectionGroup(database, 'participants'), where('userId', '==', userId)),
+    );
+    joinedIds = joinedSnap.docs
+      .map((d) => d.ref.parent.parent?.id)
+      .filter((id): id is string => Boolean(id));
+  } catch (err) {
+    console.warn('Joined rooms fetch failed', err);
+  }
 
   const relations = new Map<string, CommitteeRoomRelation>();
   const roomsById = new Map<string, Room>();
@@ -235,8 +248,12 @@ export async function fetchCommitteeRoomsForUser(userId: string): Promise<MyComm
   for (const roomId of joinedIds) {
     relations.set(roomId, mergeCommitteeRoomRelation(relations.get(roomId), 'joined'));
     if (!roomsById.has(roomId)) {
-      const room = await getRoom(roomId);
-      if (room) roomsById.set(roomId, room);
+      try {
+        const room = await getRoom(roomId);
+        if (room) roomsById.set(roomId, room);
+      } catch (err) {
+        console.warn('Room doc fetch failed', roomId, err);
+      }
     }
   }
 
@@ -247,16 +264,11 @@ export async function fetchCommitteeRoomsForUser(userId: string): Promise<MyComm
     list.push({ ...room, relation });
   }
 
-  list.sort((a, b) => {
-    const aClosed = isRoomClosed(a) ? 1 : 0;
-    const bClosed = isRoomClosed(b) ? 1 : 0;
-    if (aClosed !== bClosed) return aClosed - bClosed;
+  return list.sort((a, b) => {
     const aAt = a.closedAt || a.createdAt;
     const bAt = b.closedAt || b.createdAt;
     return bAt - aAt;
   });
-
-  return list;
 }
 
 /** Host or chair closes a room — drops it from live lists; link shows closed. */

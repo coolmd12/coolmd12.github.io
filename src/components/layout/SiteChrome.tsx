@@ -53,6 +53,7 @@ export function SiteHeader() {
             Home
           </NavLink>
           {user && !parentAccount ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
+          {user && !parentAccount ? <NavLink to="/progress">My progress</NavLink> : null}
           {user && parentAccount ? <NavLink to="/family">Parent portal</NavLink> : null}
           <NavLink to="/conferences">Conferences</NavLink>
           {!parentAccount ? <NavLink to="/practice">Practice</NavLink> : null}
@@ -84,7 +85,7 @@ export function SiteHeader() {
                     <img src={profile.photoURL} alt="" />
                   ) : (
                     <span>
-                      {(profile?.displayName || 'D')
+                      {(profile?.displayName || profile?.username || 'D')
                         .trim()
                         .split(/\s+/)
                         .slice(0, 2)
@@ -94,12 +95,21 @@ export function SiteHeader() {
                   )}
                 </span>
                 <span className="user-chip-text">
-                  <span className="user-chip-name">{profile?.displayName || 'Delegate'}</span>
                   {profile?.username ? (
-                    <span className="user-chip-meta">@{profile.username}</span>
-                  ) : caps ? (
-                    <span className="user-chip-meta">{caps}</span>
-                  ) : null}
+                    <>
+                      <span className="user-chip-name">@{profile.username}</span>
+                      {profile.displayName ? (
+                        <span className="user-chip-meta">{profile.displayName}</span>
+                      ) : caps ? (
+                        <span className="user-chip-meta">{caps}</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <span className="user-chip-name">{profile?.displayName || 'Delegate'}</span>
+                      {caps ? <span className="user-chip-meta">{caps}</span> : null}
+                    </>
+                  )}
                 </span>
                 <span className="user-chip-tip" aria-hidden="true">
                   Edit profile
