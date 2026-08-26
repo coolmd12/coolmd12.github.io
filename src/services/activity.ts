@@ -1,18 +1,23 @@
 import {
   collection,
+  collectionGroup,
   doc,
+  documentId,
+  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
   query,
   setDoc,
+  where,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import type { ActivityEvent, ActivityKind, ActivityUsageStats } from '../types/activity';
 import type { Classroom, UserProfile } from '../types';
 import type { MonthlyActivitySummary } from '../types/parent';
 import { isRoomClosed } from './committeeRoomLogic';
-import type { MyCommitteeRoom } from './rooms';
+import { fetchCommitteeRoomsForUser, type MyCommitteeRoom } from './rooms';
+import { listUserClassrooms } from './classrooms';
 
 function requireDb() {
   if (!isFirebaseConfigured || !db) {
@@ -162,6 +167,114 @@ export function backfillActivityEvents(input: {
   }
 
   return events;
+}
+
+/** Persist derived timeline events so linked parents can read full history from Firestore. */
+export async function syncActivityBackfillToFirestore(input: {
+  profile: UserProfile;
+  rooms: MyCommitteeRoom[];
+  classrooms: Classroom[];
+}): Promise<void> {
+  if (!isFirebaseConfigured || !db) return;
+  const events = backfillActivityEvents(input);
+  await Promise.all(
+    events.map(async (event) => {
+      try {
+        const dedupeKey = event.dedupeKey || event.eventId;
+        await setDoc(
+          doc(db!, 'users', input.profile.uid, 'activity', dedupeKey),
+          {
+            kind: event.kind,
+            title: event.title,
+            at: event.at,
+            dedupeKey,
+            ...(event.detail ? { detail: event.detail } : {}),
+            ...(event.href ? { href: event.href } : {}),
+          },
+          { merge: true },
+        );
+      } catch (err) {
+        console.warn('Activity backfill sync failed', err);
+      }
+    }),
+  );
+}
+
+/** Classrooms a linked parent can reconstruct from membership docs (no classroom doc read). */
+async function listClassroomsFromMembership(studentUid: string): Promise<Classroom[]> {
+  const database = requireDb();
+  const snap = await getDocs(
+    query(collectionGroup(database, 'members'), where(documentId(), '==', studentUid)),
+  );
+  const byId = new Map<string, Classroom>();
+  for (const memberDoc of snap.docs) {
+    const classroomId = memberDoc.ref.parent.parent?.id;
+    if (!classroomId) continue;
+    const data = memberDoc.data() as {
+      classroomName?: string;
+      classroomCreatedAt?: number;
+      joinedAt?: number;
+    };
+    if (!data.classroomName) continue;
+    byId.set(classroomId, {
+      id: classroomId,
+      name: data.classroomName,
+      teacherId: '',
+      teacherName: '',
+      inviteCode: '',
+      createdAt: data.classroomCreatedAt ?? data.joinedAt ?? Date.now(),
+      memberCount: 0,
+    });
+  }
+  return [...byId.values()];
+}
+
+/** Classrooms hosted by the student (readable when parent is linked). */
+async function listClassroomsHostedByStudent(studentUid: string): Promise<Classroom[]> {
+  const database = requireDb();
+  const snap = await getDocs(
+    query(collection(database, 'classrooms'), where('teacherId', '==', studentUid)),
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Classroom, 'id'>) }));
+}
+
+async function fetchStudentProfile(uid: string): Promise<UserProfile | null> {
+  const database = requireDb();
+  const snap = await getDoc(doc(database, 'users', uid));
+  if (!snap.exists()) return null;
+  return snap.data() as UserProfile;
+}
+
+/** Merge Firestore log with room/classroom history (same shape as the student dashboard). */
+export async function loadStudentActivityView(studentUid: string): Promise<ActivityEvent[]> {
+  const profile = await fetchStudentProfile(studentUid);
+  if (!profile) return [];
+
+  const [live, rooms] = await Promise.all([
+    listActivityLog(studentUid),
+    fetchCommitteeRoomsForUser(studentUid),
+  ]);
+
+  let classrooms: Classroom[] = [];
+  try {
+    classrooms = await listUserClassrooms(profile.classroomIds || []);
+  } catch {
+    // Parent accounts may lack direct classroom doc reads — fall back below.
+  }
+  if (!classrooms.length) {
+    const [fromMembership, hosted] = await Promise.all([
+      listClassroomsFromMembership(studentUid),
+      listClassroomsHostedByStudent(studentUid),
+    ]);
+    const byId = new Map<string, Classroom>();
+    for (const room of [...fromMembership, ...hosted]) {
+      byId.set(room.id, room);
+    }
+    classrooms = [...byId.values()];
+  }
+
+  const backfill = backfillActivityEvents({ profile, rooms, classrooms });
+  return mergeActivityEvents(live, backfill);
 }
 
 export function mergeActivityEvents(

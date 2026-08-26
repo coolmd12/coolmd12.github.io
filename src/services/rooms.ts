@@ -5,6 +5,7 @@ import {
   collectionGroup,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   query,
   runTransaction,
@@ -206,6 +207,56 @@ export function streamMyCommitteeRooms(
     unsubHosted();
     unsubJoined();
   };
+}
+
+/** One-shot room list for parent portal activity backfill. */
+export async function fetchCommitteeRoomsForUser(userId: string): Promise<MyCommitteeRoom[]> {
+  if (!db) return [];
+  const database = requireDb();
+
+  const [hostedSnap, joinedSnap] = await Promise.all([
+    getDocs(query(collection(database, 'rooms'), where('createdBy', '==', userId))),
+    getDocs(query(collectionGroup(database, 'participants'), where('userId', '==', userId))),
+  ]);
+
+  const hosted = hostedSnap.docs.map((d) => ({ ...d.data(), roomId: d.id }) as Room);
+  const joinedIds = joinedSnap.docs
+    .map((d) => d.ref.parent.parent?.id)
+    .filter((id): id is string => Boolean(id));
+
+  const relations = new Map<string, CommitteeRoomRelation>();
+  const roomsById = new Map<string, Room>();
+
+  for (const room of hosted) {
+    roomsById.set(room.roomId, room);
+    relations.set(room.roomId, mergeCommitteeRoomRelation(relations.get(room.roomId), 'hosted'));
+  }
+
+  for (const roomId of joinedIds) {
+    relations.set(roomId, mergeCommitteeRoomRelation(relations.get(roomId), 'joined'));
+    if (!roomsById.has(roomId)) {
+      const room = await getRoom(roomId);
+      if (room) roomsById.set(roomId, room);
+    }
+  }
+
+  const list: MyCommitteeRoom[] = [];
+  for (const [roomId, relation] of relations) {
+    const room = roomsById.get(roomId);
+    if (!room) continue;
+    list.push({ ...room, relation });
+  }
+
+  list.sort((a, b) => {
+    const aClosed = isRoomClosed(a) ? 1 : 0;
+    const bClosed = isRoomClosed(b) ? 1 : 0;
+    if (aClosed !== bClosed) return aClosed - bClosed;
+    const aAt = a.closedAt || a.createdAt;
+    const bAt = b.closedAt || b.createdAt;
+    return bAt - aAt;
+  });
+
+  return list;
 }
 
 /** Host or chair closes a room — drops it from live lists; link shows closed. */

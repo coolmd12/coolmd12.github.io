@@ -208,7 +208,9 @@ service cloud.firestore {
         || (signedIn()
           && exists(/databases/$(database)/documents/users/$(request.auth.uid))
           && 'classroomIds' in userDoc()
-          && classroomId in userDoc().classroomIds);
+          && classroomId in userDoc().classroomIds)
+        || (signedIn()
+          && linkedParentOf(resource.data.teacherId));
       allow create: if signedIn()
         && request.resource.data.teacherId == request.auth.uid
         && canTeachAccount()
@@ -227,6 +229,7 @@ service cloud.firestore {
           request.auth.uid == memberId
           || isClassroomMember(classroomId)
           || isClassroomTeacher(classroomId)
+          || linkedParentOf(memberId)
         );
         allow create: if signedIn()
           && !isParentOnlyAccount()

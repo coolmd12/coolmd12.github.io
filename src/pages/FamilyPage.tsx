@@ -6,7 +6,7 @@ import { needsParentDateOfBirth, parseParentDateOfBirth } from '../lib/dateOfBir
 import {
   buildMonthlyActivitySummary,
   computeActivityUsageFromEvents,
-  listActivityLog,
+  loadStudentActivityView,
   streamActivityLog,
 } from '../services/activity';
 import {
@@ -79,17 +79,28 @@ export function FamilyPage() {
     }
     setLoadingActivity(true);
     setSummary(null);
-    const unsub = streamActivityLog(selectedUid, (next) => {
-      setEvents(next);
-      setLoadingActivity(false);
+
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const merged = await loadStudentActivityView(selectedUid!);
+        if (!cancelled) {
+          setEvents(merged);
+          setLoadingActivity(false);
+        }
+      } catch {
+        if (!cancelled) setLoadingActivity(false);
+      }
+    }
+
+    void refresh();
+    const unsub = streamActivityLog(selectedUid, () => {
+      void refresh();
     });
-    void listActivityLog(selectedUid)
-      .then((list) => {
-        setEvents(list);
-        setLoadingActivity(false);
-      })
-      .catch(() => setLoadingActivity(false));
-    return unsub;
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [selectedUid]);
 
   if (!profile) {

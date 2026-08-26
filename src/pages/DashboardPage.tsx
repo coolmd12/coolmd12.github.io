@@ -9,6 +9,7 @@ import {
   computeActivityUsage,
   mergeActivityEvents,
   streamActivityLog,
+  syncActivityBackfillToFirestore,
 } from '../services/activity';
 import {
   createClassroom,
@@ -122,6 +123,16 @@ export function DashboardPage() {
       setActivityLoading(false);
     });
   }, [profile?.uid]);
+
+  useEffect(() => {
+    if (!profile || isParentOnly(profile)) return;
+    if (loading || roomsLoading) return;
+    void syncActivityBackfillToFirestore({
+      profile,
+      rooms: committeeRooms,
+      classrooms,
+    });
+  }, [profile, committeeRooms, classrooms, loading, roomsLoading]);
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();

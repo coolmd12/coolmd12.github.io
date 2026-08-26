@@ -137,6 +137,9 @@ export interface ClassroomMember {
   role: UserRole | 'chair';
   joinedAt: number;
   photoURL?: string;
+  /** Denormalized for parent portal activity backfill. */
+  classroomName?: string;
+  classroomCreatedAt?: number;
 }
 
 export interface PracticeSession {
