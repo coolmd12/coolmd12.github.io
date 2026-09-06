@@ -5,6 +5,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isFounder() {
+      return signedIn()
+        && request.auth.token.email.lower() == 'dhyanvim@gmail.com';
+    }
+
     function isSelf(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -34,10 +39,8 @@ service cloud.firestore {
     function validRolesList(value) {
       return value is list
         && value.size() > 0
-        && (
-          (value.size() <= 2 && value.hasOnly(['student', 'teacher']))
-          || (value.size() == 1 && value.hasOnly(['parent']))
-        );
+        && value.size() <= 3
+        && value.hasOnly(['student', 'teacher', 'parent']);
     }
 
     function isParentOnlyAccount() {
@@ -48,8 +51,15 @@ service cloud.firestore {
         && userDoc().roles.hasOnly(['parent']);
     }
 
+    function isParentCapableAccount() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && 'roles' in userDoc()
+        && userDoc().roles.hasAny(['parent']);
+    }
+
     function parentHasDateOfBirth() {
-      return isParentOnlyAccount()
+      return isParentCapableAccount()
         && 'dateOfBirth' in userDoc()
         && userDoc().dateOfBirth is string
         && userDoc().dateOfBirth.size() == 10;
@@ -135,9 +145,10 @@ service cloud.firestore {
     }
 
     match /parentLinks/{linkId} {
-      allow read: if signedIn()
-        && (resource.data.parentUid == request.auth.uid
-          || resource.data.studentUid == request.auth.uid);
+      allow read: if isFounder()
+        || (signedIn()
+          && (resource.data.parentUid == request.auth.uid
+            || resource.data.studentUid == request.auth.uid));
       allow create: if signedIn()
         && parentHasDateOfBirth()
         && request.resource.data.parentUid == request.auth.uid
@@ -203,7 +214,8 @@ service cloud.firestore {
     }
 
     match /classrooms/{classroomId} {
-      allow read: if isClassroomMember(classroomId)
+      allow read: if isFounder()
+        || isClassroomMember(classroomId)
         || isClassroomTeacher(classroomId)
         || (signedIn()
           && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -338,8 +350,8 @@ service cloud.firestore {
       }
 
       match /messages/{messageId} {
-        // Only people who joined this room can read/send its chat.
-        allow read: if isRoomParticipant(roomId);
+        // Participants only; founder may read for Founder's Stats backfill.
+        allow read: if isRoomParticipant(roomId) || isFounder();
         allow create: if isRoomParticipant(roomId)
           && request.resource.data.userId == request.auth.uid
           && request.resource.data.keys().hasAll([
@@ -366,17 +378,165 @@ service cloud.firestore {
       }
     }
 
-    // Registered-user counter. Anyone signed in may increment on first profile create;
-    // only the founder may read the count.
+    // Founder's Stats aggregates. Founder-only reads.
+    // stats/app = registered userCount (±1). stats/product = GTM/product counters.
+    function productDocKeys() {
+      return [
+        'students', 'teachers', 'parents', 'multiRole',
+        'classroomsCreated', 'roomsCreated', 'roomsJoined', 'roomsClosed', 'sessionsStarted',
+        'motionsProposed', 'votesCast', 'chatMessages', 'parentLinksCreated',
+        'updatedAt', 'backfilledAt'
+      ];
+    }
+
+    function productCountersAreInts(data) {
+      return data.students is int
+        && data.teachers is int
+        && data.parents is int
+        && data.multiRole is int
+        && data.classroomsCreated is int
+        && data.roomsCreated is int
+        && data.roomsJoined is int
+        && data.roomsClosed is int
+        && data.sessionsStarted is int
+        && data.motionsProposed is int
+        && data.votesCast is int
+        && data.chatMessages is int
+        && data.parentLinksCreated is int;
+    }
+
+    function productCountersNonNegative(data) {
+      return data.students >= 0
+        && data.teachers >= 0
+        && data.parents >= 0
+        && data.multiRole >= 0
+        && data.classroomsCreated >= 0
+        && data.roomsCreated >= 0
+        && data.roomsJoined >= 0
+        && data.roomsClosed >= 0
+        && data.sessionsStarted >= 0
+        && data.motionsProposed >= 0
+        && data.votesCast >= 0
+        && data.chatMessages >= 0
+        && data.parentLinksCreated >= 0;
+    }
+
+    function productFieldBump(field) {
+      return request.resource.data[field] == resource.data[field] + 1
+        || (
+          request.resource.data[field] == resource.data[field] - 1
+          && request.resource.data[field] >= 0
+        );
+    }
+
+    function isValidProductBump() {
+      return request.resource.data.updatedAt is number
+        && productCountersAreInts(request.resource.data)
+        && productCountersNonNegative(request.resource.data)
+        && (
+          !('backfilledAt' in resource.data)
+          || request.resource.data.backfilledAt == resource.data.backfilledAt
+        )
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['students', 'updatedAt'])
+            && productFieldBump('students')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teachers', 'updatedAt'])
+            && productFieldBump('teachers')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parents', 'updatedAt'])
+            && productFieldBump('parents')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['multiRole', 'updatedAt'])
+            && productFieldBump('multiRole')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['classroomsCreated', 'updatedAt'])
+            && productFieldBump('classroomsCreated')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roomsCreated', 'updatedAt'])
+            && productFieldBump('roomsCreated')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roomsJoined', 'updatedAt'])
+            && productFieldBump('roomsJoined')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roomsClosed', 'updatedAt'])
+            && productFieldBump('roomsClosed')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sessionsStarted', 'updatedAt'])
+            && productFieldBump('sessionsStarted')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['motionsProposed', 'updatedAt'])
+            && productFieldBump('motionsProposed')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votesCast', 'updatedAt'])
+            && productFieldBump('votesCast')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['chatMessages', 'updatedAt'])
+            && productFieldBump('chatMessages')
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentLinksCreated', 'updatedAt'])
+            && productFieldBump('parentLinksCreated')
+          )
+        );
+    }
+
+    function isValidProductBackfillWrite() {
+      return isFounder()
+        && request.resource.data.keys().hasOnly(productDocKeys())
+        && productCountersAreInts(request.resource.data)
+        && productCountersNonNegative(request.resource.data)
+        && request.resource.data.updatedAt is number
+        && (
+          request.resource.data.backfilledAt == null
+          || request.resource.data.backfilledAt is number
+        );
+    }
+
+    function productCountersSum(data) {
+      return data.students + data.teachers + data.parents + data.multiRole
+        + data.classroomsCreated + data.roomsCreated + data.roomsJoined
+        + data.roomsClosed + data.sessionsStarted + data.motionsProposed
+        + data.votesCast + data.chatMessages + data.parentLinksCreated;
+    }
+
+    function isValidProductCreate() {
+      return signedIn()
+        && request.resource.data.keys().hasOnly(productDocKeys())
+        && productCountersAreInts(request.resource.data)
+        && productCountersNonNegative(request.resource.data)
+        && request.resource.data.updatedAt is number
+        && request.resource.data.backfilledAt == null
+        && productCountersSum(request.resource.data) <= 1;
+    }
+
     match /stats/{docId} {
-      allow read: if signedIn()
-        && request.auth.token.email.lower() == 'dhyanvim@gmail.com';
-      allow create: if signedIn()
+      allow read: if isFounder();
+
+      allow create: if docId == 'app'
+        && signedIn()
         && request.resource.data.keys().hasOnly(['userCount', 'updatedAt'])
         && request.resource.data.userCount is int
         && request.resource.data.userCount == 1
         && request.resource.data.updatedAt is number;
-      allow update: if signedIn()
+
+      allow create: if docId == 'product'
+        && (isValidProductCreate() || isValidProductBackfillWrite());
+
+      allow update: if docId == 'app'
+        && signedIn()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userCount', 'updatedAt'])
         && request.resource.data.userCount is int
         && request.resource.data.updatedAt is number
@@ -387,6 +547,10 @@ service cloud.firestore {
             && request.resource.data.userCount >= 0
           )
         );
+
+      allow update: if docId == 'product'
+        && (isValidProductBump() || isValidProductBackfillWrite());
+
       allow delete: if false;
     }
   }

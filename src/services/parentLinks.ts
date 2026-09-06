@@ -12,11 +12,13 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { validateUsername } from '../lib/username';
 import {
+  isParentAccount,
   isParentOnly,
   type UserProfile,
 } from '../types';
 import { needsParentDateOfBirth, parseParentDateOfBirth } from '../lib/dateOfBirth';
 import { MAX_PARENT_LINKS, type LinkedStudentSummary, type ParentLink } from '../types/parent';
+import { bumpProductCounter } from './stats';
 
 function requireDb() {
   if (!isFirebaseConfigured || !db) {
@@ -148,7 +150,7 @@ export async function linkStudentAsParent(input: {
   const database = requireDb();
   const { parent } = input;
 
-  if (!isParentOnly(parent)) {
+  if (!isParentAccount(parent)) {
     throw new Error('Only parent accounts can link to students.');
   }
   if (needsParentDateOfBirth(parent)) {
@@ -202,6 +204,7 @@ export async function linkStudentAsParent(input: {
     }
     throw err instanceof Error ? err : new Error('Could not link student.');
   }
+  void bumpProductCounter('parentLinksCreated');
   return link;
 }
 

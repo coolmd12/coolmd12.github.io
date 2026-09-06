@@ -27,7 +27,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase';
 import { validateDisplayName, validateUsername } from '../lib/username';
 import { checkSignupToken, consumeSignupToken } from './emailVerification';
-import { bumpRegisteredUserCount, decrementRegisteredUserCount } from './stats';
+import { bumpRegisteredUserCount, decrementRegisteredUserCount, adjustRoleMixCounters } from './stats';
 import { ensureFamilyCode, listParentLinksForParent, listParentLinksForStudent } from './parentLinks';
 import { parseParentDateOfBirth } from '../lib/dateOfBirth';
 import {
@@ -304,6 +304,7 @@ export async function registerUser(input: {
   } catch (err) {
     console.warn('Could not bump registered user count', err);
   }
+  void adjustRoleMixCounters([], roles);
   return profile;
 }
 
@@ -339,6 +340,8 @@ export async function claimUsername(
   if (extras?.roles?.length) {
     rolePatch = normalizeAccountRoles(extras.roles);
   }
+  const parentOnly =
+    rolePatch.roles.length === 1 && rolePatch.roles[0] === 'parent';
 
   let parentDob: string | undefined;
   if (rolePatch.roles.includes('parent')) {
@@ -367,13 +370,12 @@ export async function claimUsername(
     role: rolePatch.role,
     roles: rolePatch.roles,
     emailVerifiedAt: existing?.emailVerifiedAt ?? (isGoogleAuthUser(user) ? Date.now() : undefined),
-    // Parents skip the school welcome step; Family is their home.
-    profileSetupComplete:
-      rolePatch.roles.includes('parent')
+    // Parent-only skips the school welcome step; Family is their home.
+    profileSetupComplete: parentOnly
+      ? true
+      : existing?.profileSetupComplete === true
         ? true
-        : existing?.profileSetupComplete === true
-          ? true
-          : false,
+        : false,
     createdAt: existing?.createdAt ?? Date.now(),
     classroomIds: existing?.classroomIds ?? [],
     ...(existing?.school ? { school: existing.school } : {}),
@@ -399,7 +401,7 @@ export async function claimUsername(
         roles: rolePatch.roles,
       };
       if (parentDob) patch.dateOfBirth = parentDob;
-      if (rolePatch.roles.includes('parent')) patch.profileSetupComplete = true;
+      if (parentOnly) patch.profileSetupComplete = true;
       tx.update(userRef, patch);
     } else {
       createdNewProfile = true;
@@ -432,11 +434,13 @@ export async function claimUsername(
       console.warn('Could not bump registered user count', err);
     }
   }
+  // First username claim = first counted profile for role mix (stubs were never counted).
+  void adjustRoleMixCounters([], rolePatch.roles);
 
   let next = await fetchUserProfile(user.uid);
   if (!next) throw new Error('Profile not found.');
 
-  if (!rolePatch.roles.includes('parent')) {
+  if (!parentOnly) {
     next = await ensureFamilyCode(next);
   }
 
@@ -759,6 +763,10 @@ export async function updateUserProfile(input: {
           : input.photoURL,
   });
 
+  if (input.roles !== undefined) {
+    void adjustRoleMixCounters(profileRoles(existing), nextRoles);
+  }
+
   return {
     ...existing,
     displayName,
@@ -910,6 +918,7 @@ export async function deleteAccount(): Promise<void> {
   }
 
   await decrementRegisteredUserCount();
+  void adjustRoleMixCounters(profileRoles(profile), []);
 
   if (profile.username) {
     try {

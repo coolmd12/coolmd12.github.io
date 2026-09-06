@@ -1,6 +1,6 @@
 # GoMUN Delegate Arena — Outline
 
-> Condensed README + ROADMAP. For setup detail see [README.md](./README.md). For full phases see [ROADMAP.md](./ROADMAP.md).
+> Condensed README + ROADMAP. For setup detail see [README.md](./README.md). For full phases see [ROADMAP.md](./ROADMAP.md). For go-to-market + Founder Stats metrics see [GTM.md](./GTM.md).
 
 **Live:** [https://coolmd12.github.io](https://coolmd12.github.io) · **Founder:** Dhyanvi Mehta  
 **Promise:** Free forever for core practice. No freemium upsell.
@@ -25,9 +25,9 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 | Role | Job |
 | --- | --- |
 | **Teacher** | Create classroom, share invite, chair later |
-| **Student** | Join with code, practice |
+| **Student** | Join with code, practice; **My progress** (`/progress`) |
 | **Both** | Same account can teach one room and join another as a delegate |
-| **Parent / guardian** | Parent-only account; link kids via `@username` + family code; `/family` read-only activity + monthly summaries. |
+| **Parent / guardian** | Link kids via `@username` + family code; `/family` read-only activity + monthly summaries. May also hold student/teacher on the same account. |
 
 **Direction:** account holds capabilities (`roles[]`); **per-classroom** membership / ownership is the real permission in a room. Details in [ROADMAP.md](./ROADMAP.md).
 
@@ -36,9 +36,9 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 ## User flow (today)
 
 1. **Continue with Google** (signup or login)  
-2. New users: **username** + display name + capabilities (student and/or teacher, **or** parent-only)  
+2. New users: **username** + display name + capabilities (any mix of student, teacher, parent)  
 3. Welcome: optional school (Skip OK) · avatars = **initials** · parents enter **date of birth** (18+)  
-4. Dashboard (students/teachers) or **Parent portal** (`/family`) → practice / conferences / profile  
+4. Dashboard + **My progress** (`/progress`) for students/teachers, **Parent portal** (`/family`) when parent-capable (parent-only homes to Family) → practice / conferences / profile  
 
 Google proves the email; no Resend verification code in the current UI.
 
@@ -54,20 +54,22 @@ Google proves the email; no Resend verification code in the current UI.
 | Profile / welcome (school; initials) | Done |
 | Signup / login UI (Google-only) | Done |
 | Role-aware UX | Done (Phase 1.6) |
-| Multi-role (student **and** teacher) | Done (`roles[]`) |
-| Founder's Stats (`/admin` — `dhyanvim@gmail.com` only) | Done |
+| Multi-role (student / teacher / parent) | Done (`roles[]`; any combination) |
+| Founder's Stats (`/admin` — `dhyanvim@gmail.com` only) | Done (Phase 2.7) — reach / activation / feature usage + backfill |
 | Live committee floor (queue, timer, motions, gavel) | Done (Phase 2 core) |
 | Basic room chat | Done (participants only; history shared) |
 | Chair session start/stop + room audio cues | Done |
 | Dashboard Your activity timeline | Done |
 | Further room UX polish | As needed |
-| Parent / guardian portal (`/family`) | Done (V1) — family-code link; activity + monthly summaries |
+| Parent / guardian portal (`/family`) | Done (V1) — family-code link; activity + monthly summaries; load hardened |
 | Student My progress (`/progress`) | Done — own timeline + monthly summaries |
+| Account deletion | Done (Profile) |
 | Profile photos (Storage) | Paused (Blaze) |
 | Email/password + Resend codes | Parked (needs verified sending domain) |
 | AI (Gemini) | Phase 3 — deferred (free/Spark path TBD) |
-| Conference filters | Phase 4 |
-| Tutorials / inbox / drafting tools / notes | Phase 5 |
+| RoP / Scripts of Motions | **Next — Phase 5.1** |
+| Conference filters | Phase 4 (after 5.1) |
+| Tutorials / inbox / drafting tools / notes | Phase 5 (after 5.1) |
 | In-app calling (voice / video) | Phase 6 — later |
 | Speech & Debate (parallel practice mode) | Far future — parked |
 
@@ -90,8 +92,10 @@ Google proves the email; no Resend verification code in the current UI.
 - Chair **manual gavel** (one tap per click), synced to the room  
 - **Enable sound** in-room (gavel + timer 10s warning + end chime)  
 - Chair **start / resume** or **end session (recess)**  
-- Founder **Founder's Stats** via `/admin` — hard-locked to `dhyanvim@gmail.com` only  
-- **Parent portal V1:** parent-only accounts (`roles: ['parent']`); parent-initiated link with student `@username` + **family code** (no Approve/Deny); `/family` **Parent portal** shows linked students’ activity + monthly summaries (Aeries-style overview); parents enter **date of birth** (must be 18+; no ID upload); parents do not chair rooms or edit student work  
+- Founder **Founder's Stats** via `/admin` — hard-locked to `dhyanvim@gmail.com`; `stats/app` + `stats/product` counters; founder backfill; GA4 later ([GTM.md](./GTM.md))  
+- **Parent portal:** accounts with `parent` in `roles[]` (alone or with student/teacher); parent-initiated link with student `@username` + **family code**; `/family` **Parent portal** shows linked students’ activity + monthly summaries; parents enter **date of birth** (must be 18+; no ID upload); parent-only accounts do not chair rooms or edit student work  
+- **Student My progress:** `/progress` is the student’s own timeline + monthly summaries (same activity sources as the parent portal)  
+- **Parent activity reads:** linked parents reconstruct classrooms from `classrooms/{id}/members/{studentUid}` (not a `collectionGroup` on `members`); activity/room queries fail in isolation so one permission error cannot blank the portal  
 
 ---
 
@@ -112,8 +116,9 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 4. ~~Dashboard Your activity~~ **Done**  
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**  
 6. ~~Parent activity reliability + student `/progress`~~ **Done**  
-7. Phase 3 AI (deferred) · Phase 4 conferences · Phase 5 learning/ops  
-8. **Phase 6** in-app calling · Photos when Blaze is OK  
+7. ~~**Phase 2.7 Founder Stats + GTM metrics**~~ **Done** ([GTM.md](./GTM.md))  
+8. Publish rules + `/admin` backfill (ops) · **Phase 5.1 Scripts of Motions / RoP cheat sheets** ⬅️ next  
+9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred) · **Phase 6** calling · optional GA4  
 
 ---
 
@@ -121,23 +126,23 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 
 Revive email-code signup (verified domain) · login with username · richer profiles · deeper messaging · YouTube curriculum · **Speech & Debate** practice mode (same site as MUN — far future, not a near-term phase) · **appearance themes** (light default, optional dark / warm-gold)
 
-### Parent / guardian accounts (V1 done; later parked)
+### Parent / guardian accounts (shipped)
 
-**V1 (shipped):**
+**Shipped:**
 
-- Parent-only accounts (`roles: ['parent']`); multi-role parent+student/teacher later.
+- Accounts may hold any mix of `student`, `teacher`, and `parent` on one UID (`roles[]`). Edit anytime from Profile.
 - Parent-initiated link: enter student `@username` + **family code** (shown on student Profile; rotatable). No student Approve/Deny queue.
 - `/family`: linked students → read-only activity timeline + usage chips + **rule-based monthly summaries** (no AI narrative yet).
 - Cap ~5 linked students per parent. Parent can unlink; student can rotate code (blocks new links) and unlink as a safety escape.
-- Age: required **date of birth** on parent account (must calculate to 18+). No ID uploads. Stronger identity checks parked.
-- Parents do **not** see chat, motions, room floor, or classroom rosters in V1.
+- Age: required **date of birth** whenever `parent` is selected (must calculate to 18+). No ID uploads. Stronger identity checks parked.
+- Parent-only accounts do **not** see chat, motions, room floor, or classroom rosters. Multi-role parents with student/teacher use Dashboard / rooms as usual.
 - UX: Aeries-like **Parent portal** — pick a linked student, view their practice activity / summaries.
 
 **Later (still parked):**
 
-- multi-role; stronger identity checks; richer visibility; AI-written summary narratives.
+- stronger identity checks; richer visibility; AI-written summary narratives.
 
-**Shipped follow-ups:** Parent linked-child activity load hardened; students have **My progress** (`/progress`) with timeline + monthly summaries.
+**Shipped follow-ups:** Parent linked-child activity load hardened (member-doc classroom backfill; isolated source failures; error banners + clear-on-switch). Students have **My progress** (`/progress`) with timeline + monthly summaries. Publish `firebase/firestore.rules` for parent reads; student should open Dashboard or My progress once so history syncs.
 
 ---
 
@@ -148,14 +153,14 @@ Extra MUN help is welcome — **integrity first:** tools guide format/procedure 
 - **Online conference practice:** real-time committee rooms for remote sessions and virtual practice rounds.
 - **In-person conference operations:** chair-facing tools for inputting and organizing MUN data from physical conferences.
 - **Smart Research Simulation Tools:**
-  - Interactive Clause Builders / **resolution formatting**
-  - Country Stance Aggregator
-  - Procedural / **Rules-of-Procedure cheat sheets** ("Scripts of Motions")
-  - **Position paper drafting tools** (guided structure / templates; user writes every sentence)
+  - Procedural / **Rules-of-Procedure cheat sheets** ("Scripts of Motions") — **Phase 5.1 next**
+  - Interactive Clause Builders / **resolution formatting** (later Phase 5)
+  - Country Stance Aggregator (later Phase 5)
+  - **Position paper drafting tools** (guided structure / templates; user writes every sentence) (later Phase 5)
 - **Prep notes & documents:** write notes **on the spot** in-app for later reference, **and/or** link/attach Google Docs, Slides, PDFs (not upload-only).
 - **Built-in AI prep assistant:** ask questions, get resource links and general answers — **does not edit** speeches, resolutions, position papers, or notes.
 - **In-app calling:** optional voice/video inside rooms (Phase 6); Meet/Zoom remains a fallback.
-- **Appearance themes (parked):** user-selectable color themes — at least a default **light** theme (current direction), a **dark** theme, and optionally a softer **warm / gold-accent** or high-contrast mode. Keep brand (navy + gold) recognizable across themes; don’t force dark UI.
+- **Appearance themes (parked):** user-selectable color themes — at least a default **light** theme (current direction), a **dark** theme, and optionally a softer **warm / gold-accent** or high-contrast mode. Keep brand (navy + gold) recognizable across themes; don’t force dark UI. Current chrome: light app pages, dark header, gold nav underlines; **do not** brighten hero / login / signup photos to “fix” contrast.
 
 ---
 
@@ -166,3 +171,4 @@ Extra MUN help is welcome — **integrity first:** tools guide format/procedure 
 | **OUTLINE.md** | This page — quick combined view |
 | **README.md** | Setup, flow, layout |
 | **ROADMAP.md** | Phases, checklists, decisions |
+| **GTM.md** | Go-to-market plan + metrics for Founder's Stats |

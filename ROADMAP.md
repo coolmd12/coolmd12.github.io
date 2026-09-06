@@ -62,17 +62,19 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | Conference directory | Done | Outbound links only. |
 | Core UI/UX polish | Done | General app usability. |
 | Role-aware UX | Done | Phase 1.6 completed. |
-| Multi-role accounts | Done | Student **and** teacher. |
-| Founder Stats (`/admin`) | Done | Hard-locked to `dhyanvim@gmail.com` only. |
+| Multi-role accounts | Done | Student, teacher, and/or parent on one UID. |
+| Founder Stats (`/admin`) | Done (Phase 2.7) | User count + product counters (`stats/product`); founder backfill. GA4 later. See [GTM.md](./GTM.md). |
 | Profile photos (Storage) | Not built | Needs Firebase Blaze. |
 | Email/password + Resend codes | Parked | Removed from UI; Worker kept for later. |
 | Live committee floor | Phase 2 floor done | Speakers, timer, motions, gavel (real sample), chat, session start/stop, audio cues. |
 | Dashboard Your activity | Done | Horizontal timeline + usage chips; live log + backfill from rooms/classrooms. |
-| Parent / guardian portal | Done (V1) | Parent-only; `/family`; family-code link; activity + monthly summaries. |
+| Parent / guardian portal | Done | `/family`; family-code link; activity + monthly summaries; multi-role parent OK. |
 | Student My progress | Done | `/progress` — own timeline + monthly summaries. |
-| AI tools (Gemini) + prep Q&A assistant | Not built — deferred | Phase 3 after progress track; backend TBD (stay free / Spark). |
-| Conference filters | Not built | Phase 4. |
-| Tutorials / inbox / drafting / notes | Not built | Phase 5. |
+| Account deletion | Done | Profile → delete account. |
+| AI tools (Gemini) + prep Q&A assistant | Not built — deferred | Phase 3; backend TBD (stay free / Spark). |
+| Conference filters / ops | Not built — after Phase 5.1 | Phase 4 parked until procedure learning tools land. |
+| RoP / Scripts of Motions | Next — Phase 5.1 | Thin Phase 5 slice; complements live floor. |
+| Tutorials / inbox / drafting / notes | Not built | Rest of Phase 5 after 5.1. |
 | In-app calling (voice/video) | Not built — Later | Meet/Zoom links until then. |
 | Speech & Debate (parallel practice mode) | Not built — Far future | Parked idea. |
 
@@ -98,6 +100,7 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 - [x] Multi-role accounts (student **and** teacher on one UID)
 - [x] Role-aware UI (dashboard, classroom controls)
 - [x] Founder Stats page (`/admin`, `stats/app` counter)
+- [x] Account deletion (Profile)
 
 ### Phase 2 — Live committee room ⬅️ core done; polish next
 
@@ -162,17 +165,17 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 
 **Parent note:** Parent accounts read linked students’ activity from the same collection (read-only). See Phase 2.6.
 
-### Phase 2.6 — Parent / guardian portal ⬅️ V1 done
+### Phase 2.6 — Parent / guardian portal + student self-progress ⬅️ done
 
-**Goal:** Parent-only accounts can link to students and monitor practice activity without joining rooms as the child.
+**Goal:** Parent-only accounts can link to students and monitor practice activity without joining rooms as the child. Students get the same timeline + monthly summaries for themselves.
 
-**Locked V1 decisions:**
+**Locked decisions:**
 
-- Parent-only (`roles: ['parent']`); multi-role later.
+- Any mix of `student` / `teacher` / `parent` on one UID (`roles[]`); edit from Profile.
 - Parent-initiated link: `@username` + student **family code** (no Approve/Deny).
 - `/family`: linked kids → activity timeline + usage chips + **rule-based monthly summaries**.
-- 18+ via **date of birth** on the parent profile (no ID upload / attestation checkbox).
-- Cap ~5 links per parent. Parents do not see chat / room floor / classroom rosters.
+- 18+ via **date of birth** whenever `parent` is selected (no ID upload / attestation checkbox).
+- Cap ~5 links per parent. Parent-only accounts do not see chat / room floor / classroom rosters.
 - UX modeled loosely on school **parent portals** (e.g. Aeries): select a student → view their practice activity.
 
 **Build:**
@@ -182,15 +185,60 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [x] Student Profile: show / copy / rotate family code
 - [x] `/family` Parent portal UI: link, list, timeline, monthly summary
 - [x] Nav + guards (Parent portal link; hide teacher create for parent-only)
-- [x] Parent activity load hardened — member-doc classroom backfill; isolate classroom failures so rooms + live log still show; clear UI on student switch + error banners
+- [x] Parent activity load hardened — member-doc classroom backfill (`classrooms/{id}/members/{studentUid}`); isolate classroom/room failures so live log still shows; clear UI on student switch + error banners
 - [x] Student **My progress** (`/progress`) — own timeline + monthly summaries; nav + dashboard link
+- [x] Parent multi-role (combine with student/teacher; Profile + signup role checkboxes)
+
+**Ops (parent activity):** Publish `firebase/firestore.rules` to production. Linked parents cannot run the old `collectionGroup('members')` + `documentId()` query. If a timeline is empty, have the student open **Dashboard** or **My progress** once so backfill syncs to `users/{uid}/activity`.
 
 **Later (still parked):**
 
-- Parent multi-role; stronger identity checks; richer visibility; AI-written summary narratives
-- Phase 3 AI deferred until a free/Spark-friendly Gemini path is chosen
+- Stronger identity checks; richer visibility; AI-written summary narratives
 
-### Phase 3 — AI integration ⬅️ deferred (after progress track)
+### Phase 2.7 — Founder Stats + GTM metrics ⬅️ done
+
+**Goal:** Make `/admin` (Founder's Stats) useful for go-to-market and product-quality decisions — not just a single registered-user counter. Full channel/messaging plan: [GTM.md](./GTM.md).
+
+**Why now:** Phase 2.6 is shipped; Phase 3 AI is deferred. Before Phase 4/5 feature work, we need data on reach, activation, feature usage, and quality so outreach and polish are informed.
+
+**Questions Founder's Stats should answer:**
+
+- Is the site **reaching** enough people? (signups; optional web analytics later)
+- Is product **quality / activation** good? (create/join room, start session, return use)
+- Which **features are used**? (motions, votes, chat, classrooms, parent links)
+
+**Locked decisions:**
+
+- Still **founder-only** (`dhyanvim@gmail.com`); no public analytics dashboard.
+- **Spark-friendly aggregate counters** on `stats/app` (userCount) + `stats/product` (GTM counters); increment on success.
+- **GA4 deferred** — product counters first; web analytics a later follow-up.
+- **One-time founder backfill** from `/admin`, then live increments onward.
+- **Sessions started:** +1 on room create (born `open`) and +1 on resume after recess; historical backfill ≈ rooms created.
+- No PII dumps on Founder's Stats (emails stay in Firebase Auth console).
+
+**Build:**
+
+- [x] Role breakdown counters (student / teacher / parent / multi-role)
+- [x] Classroom created counter
+- [x] Room loop counters (created, joined, closed; sessions started)
+- [x] Procedure depth counters (motions proposed, votes cast, chat messages)
+- [x] Parent-link adoption counter
+- [x] Founder's Stats UI: grouped panels (Reach · Activation · Feature usage) + backfill button
+- [ ] Optional later: wire free web analytics (landing conversion / top pages) and link from `/admin`
+- [ ] Doc: keep [GTM.md](./GTM.md) targets in sync once baselines exist (after first backfill + a few weeks)
+
+**Ops:** Publish `firebase/firestore.rules` (includes `stats/product` + founder backfill reads). Open `/admin` → **Backfill from existing data** once. Then use weekly Founder's Stats + [GTM.md](./GTM.md) cadence.
+
+**How it works:**
+
+1. **Live path:** After a successful product write (e.g. `createRoom`, `sendMessage`), the service calls `bumpProductCounter` / `adjustRoleMixCounters` in [`src/services/stats.ts`](src/services/stats.ts). Each bump is a Firestore transaction on `stats/product` that changes **one** integer by ±1 (rules enforce that). Failures are logged and do not break the user action.
+2. **User count path:** Unchanged — `stats/app.userCount` still ±1 on profile create / account delete.
+3. **Backfill path:** Founder clicks the button on `/admin` → `backfillProductStats()` scans `users`, `classrooms`, `rooms` (+ participants/motions/messages), and `parentLinks`, then `setDoc`s absolute totals + `backfilledAt`. Historical `sessionsStarted` is set equal to `roomsCreated` (resumes after recess cannot be recovered).
+4. **UI path:** [`AdminStatsPage.tsx`](src/pages/AdminStatsPage.tsx) subscribes to both docs live and shows Reach / Activation / Feature usage.
+
+**Later (parked):** time-series charts, cohort retention tables, per-classroom leaderboards, exporting CSVs, GA4.
+
+### Phase 3 — AI integration ⬅️ deferred
 
 **Goal:** Provide AI-powered feedback, training, and a prep Q&A assistant — always as **help for prep**, never as a plagiarism / ghostwriting engine.
 
@@ -204,9 +252,11 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [ ] **Built-in AI prep assistant** — ask general MUN / procedure / topic questions; suggest prep websites and resources
 - [ ] Explicit boundary: assistant **finds resources and answers questions**; it does **not** edit the user’s speeches, resolutions, position papers, or notes
 
-### Phase 4 — Conference features & operations
+### Phase 4 — Conference features & operations ⬅️ after Phase 5.1
 
 **Goal:** Expand beyond the conference directory into both online practice and in-person conference operations.
+
+**Why later:** Procedure-floor learning tools (Phase 5.1) help activation first. Conference filters/ops are a parallel lane — pick up after Scripts of Motions ships.
 
 **Build:**
 
@@ -220,15 +270,34 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [ ] Voting record compilation and analysis
 - [ ] Awards and recognition tracking
 
-### Phase 5 — Research tools & learning
+### Phase 5 — Research tools & learning ⬅️ next (start with 5.1)
 
 **Goal:** Extra MUN help for delegates — procedure, formatting, drafting structure, and personal notes — without doing the academic work for them.
 
+**Integrity:** Tools guide format and procedure; the user always owns the writing. No ghostwriting.
+
+#### Phase 5.1 — Scripts of Motions / RoP cheat sheets ⬅️ next build
+
+**Goal:** A simple in-app reference so chairs and delegates can run procedure correctly beside the live floor.
+
+**Locked direction (draft for build brainstorm):**
+
+- Pick a ruleset (e.g. UNA-USA-style vs THIMUN-style — exact sets TBD at build time).
+- Show a single-page (or printable) **Script of Motions**: common motions, who may raise them, vote type, typical phrasing — **reference only**, not auto-running room motions.
+- Signed-in access; link from nav and/or room help. No AI required; static/curated content is fine for V1.
+- Complements Phase 2 floor (helps motions feature depth / GTM quality).
+
 **Build:**
+
+- [ ] Ruleset picker + Scripts of Motions reference UI
+- [ ] Nav / discoverability (and optional in-room link)
+- [ ] Optional print / download-friendly layout
+- [ ] Doc + Founder's Stats note if we add a simple “opened cheat sheet” counter later (not required for 5.1)
+
+#### Phase 5 — later slices (parked until after 5.1)
 
 - [ ] Interactive Clause Builders (resolution **formatting** guides — user still writes substance)
 - [ ] Country Stance Aggregator
-- [ ] Procedural / Rules-of-Procedure cheat sheets ("Scripts of Motions")
 - [ ] Position paper drafting tools (templates / guided structure / outlines; **user writes the content** — no AI ghostwriting)
 - [ ] Prep notes workspace — **write notes on the spot** in-app **and** link or attach existing Google Docs, Slides, PDFs (not upload-only)
 - [ ] In-app tutorials for MUN procedures
@@ -275,13 +344,14 @@ Two future product lanes will expand the platform beyond basic classroom practic
   - Optional **dark** theme for users who prefer it (not the forced default).
   - Optional **warm / gold-accent** or high-contrast accessibility theme.
   - Themes should share the same layout and brand signals; only tokens (backgrounds, surfaces, text, accents) swap.
+  - Current site: light pages, dark header, gold nav underlines / dashboard accents. Do **not** brighten hero, login, or signup photos to chase contrast.
 - **In-app calling:** voice/video inside committee rooms so Meet/Zoom is optional, not required (Phase 6).
 - **Parent / guardian portal (V1 shipped; progress follow-ups done):**
-  - V1: parent-only; parent-initiated `@username` + family code; `/family` Parent portal activity + monthly summaries; date of birth (18+).
+  - Shipped: multi-role parent+student/teacher; family-code link; `/family` activity + monthly summaries; date of birth (18+).
   - Linked-child activity load hardened (member-doc classroom backfill; no silent wipe).
   - **Student self-progress** at `/progress` (timeline + monthly summaries).
-  - Later: multi-role parent+student/teacher; stronger identity checks; richer visibility; AI summary narratives.
-  - Parents cannot chair rooms or edit student work; no chat/room floor in V1.
+  - Later: stronger identity checks; richer visibility; AI summary narratives.
+  - Parent-only accounts cannot chair rooms or edit student work; no chat/room floor for parent-only.
 
 ---
 
@@ -292,9 +362,10 @@ Two future product lanes will expand the platform beyond basic classroom practic
 3. ~~Finish Phase 2~~ **Done** (chat, session controls, audio cues, delegate actions) — more UX polish anytime
 4. ~~Dashboard Your activity timeline~~ **Done**
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**
-6. ~~Parent activity reliability + student `/progress`~~ **Done** (this track)
-7. Phase 3 AI (deferred — free/Spark path TBD) · Phase 4 conferences · Phase 5 learning/ops
-8. **Phase 6** in-app calling · Photos when Blaze is OK · optional revive email-code signup · parent multi-role / stronger identity
+6. ~~Parent activity reliability + student `/progress`~~ **Done**
+7. ~~**Phase 2.7 Founder Stats + GTM metrics**~~ **Done** (richer `/admin`; see [GTM.md](./GTM.md))
+8. Publish rules + `/admin` backfill (ops) · **Phase 5.1 Scripts of Motions / RoP cheat sheets** ⬅️ next
+9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred) · **Phase 6** calling · Photos when Blaze is OK · optional GA4
 
 ---
 
@@ -306,12 +377,15 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Open committee rooms:** not limited to classroom members; any signed-in user can create and invite others via link.
 - **Join-time session role:** chair or delegate chosen when entering (editable in-room); delegate display name = country (manual until country assignment); chair name is typed; UI shows `Chair · …` / `Delegate · …`.
 - **Meeting link on create:** optional Meet/Zoom/etc. URL on the room until Phase 6 in-app calling.
-- **Multi-role accounts:** A single user ID can have multiple roles (student, teacher). UX adapts dynamically.
+- **Multi-role accounts:** A single user ID can have any mix of student, teacher, and parent. UX adapts dynamically; edit roles on Profile.
 - **Username:** Discord-style unique handle, locked after signup. Display name is editable.
 - **Private classrooms:** No public lobbies or social features.
-- **Founder Stats:** `/admin` (“Founder's Stats”) is hard-locked to `dhyanvim@gmail.com` in the UI and Firestore read rules. Exact Auth roster stays in Firebase Console.
-- **Parent portal V1:** Parent-only accounts; link via student family code; `/family` is an Aeries-style read-only activity portal + rule-based monthly summaries; parents set **date of birth** (must be 18+; no ID upload).
+- **Founder Stats:** `/admin` (“Founder's Stats”) is hard-locked to `dhyanvim@gmail.com`. `stats/app` = registered user count; `stats/product` = role mix + classrooms/rooms/sessions + motions/votes/chat/parent links. Founder can one-time backfill from `/admin`. Exact Auth roster stays in Firebase Console. GA4 deferred (see [GTM.md](./GTM.md)).
+- **Parent portal:** Accounts with `parent` capability; link via student family code; `/family` is an Aeries-style read-only activity portal + rule-based monthly summaries; parents set **date of birth** (must be 18+; no ID upload). Parent-only accounts skip Dashboard; multi-role parents get both.
+- **Student My progress:** `/progress` uses the same activity log + room/classroom backfill as the parent portal, for the signed-in student.
+- **Parent activity queries:** Linked parents read member docs by classroom id (rules: `linkedParentOf`); do not use `collectionGroup('members')` with bare `documentId()`. Isolate per-source failures.
 - **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them.
+- **Next product bet:** **Phase 5.1** Scripts of Motions / RoP cheat sheets before Phase 4 conference work — strengthens the procedure floor loop for GTM.
 
 ---
 
@@ -329,6 +403,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
 
 | File | Purpose |
 | --- | --- |
-| [OUTLINE.md](./OUTLINE.md) | Quick overview (this file) |
+| [OUTLINE.md](./OUTLINE.md) | Quick overview |
 | [README.md](./README.md) | Setup and current app flow |
 | [ROADMAP.md](./ROADMAP.md) | Full phased product plan (this file) |
+| [GTM.md](./GTM.md) | Go-to-market plan + Founder Stats metric needs |

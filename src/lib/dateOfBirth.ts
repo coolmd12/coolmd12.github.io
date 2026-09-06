@@ -62,7 +62,7 @@ export function hasValidParentDateOfBirth(dateOfBirth: string | undefined): bool
   return parseParentDateOfBirth(dateOfBirth).ok === true;
 }
 
-/** Parent portal gate: missing or underage DOB. */
+/** Parent portal gate: any account with the parent capability needs a valid 18+ DOB. */
 export function needsParentDateOfBirth(profile: {
   roles?: Array<'student' | 'teacher' | 'parent'>;
   role?: 'student' | 'teacher' | 'parent';
@@ -74,7 +74,6 @@ export function needsParentDateOfBirth(profile: {
     : profile.role
       ? [profile.role]
       : [];
-  const parentOnly = roles.length === 1 && roles[0] === 'parent';
-  if (!parentOnly) return false;
+  if (!roles.includes('parent')) return false;
   return !hasValidParentDateOfBirth(profile.dateOfBirth);
 }

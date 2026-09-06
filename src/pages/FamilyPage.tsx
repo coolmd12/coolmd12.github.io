@@ -15,7 +15,7 @@ import {
   saveParentDateOfBirth,
   unlinkParentLink,
 } from '../services/parentLinks';
-import { isParentOnly } from '../types';
+import { isParentAccount } from '../types';
 import type { ActivityEvent } from '../types/activity';
 import type { LinkedStudentSummary, MonthlyActivitySummary } from '../types/parent';
 import { MAX_PARENT_LINKS } from '../types/parent';
@@ -42,7 +42,7 @@ export function FamilyPage() {
   const [summaryYear, setSummaryYear] = useState(now.getFullYear());
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1);
 
-  const parentAccount = isParentOnly(profile);
+  const parentAccount = isParentAccount(profile);
   const needsDob = needsParentDateOfBirth(profile);
 
   const selected = linked.find((s) => s.link.studentUid === selectedUid) || null;
@@ -218,7 +218,11 @@ export function FamilyPage() {
             them.
           </p>
         </div>
-        <Link to="/profile" className="btn btn-secondary">
+        <Link
+          to="/profile"
+          state={{ from: '/family' }}
+          className="btn btn-secondary"
+        >
           Profile
         </Link>
       </header>
