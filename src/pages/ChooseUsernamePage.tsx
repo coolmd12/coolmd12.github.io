@@ -24,7 +24,7 @@ export function ChooseUsernamePage() {
   const isGoogleOnboarding = Boolean(
     profile && !profile.username && profile.profileSetupComplete === false,
   );
-  const parentSelected = roles.length === 1 && roles[0] === 'parent';
+  const parentSelected = roles.includes('parent');
 
   useEffect(() => {
     if (!profile || prefilled || !isGoogleOnboarding) return;
@@ -46,21 +46,11 @@ export function ChooseUsernamePage() {
     return <Navigate to={homePathForProfile(profile)} replace />;
   }
 
-  function toggleStudentTeacher(role: 'student' | 'teacher', checked: boolean) {
+  function toggleRole(role: UserRole, checked: boolean) {
     setRoles((prev) => {
-      const withoutParent = prev.filter((r) => r !== 'parent');
-      if (checked) return Array.from(new Set([...withoutParent, role]));
-      return withoutParent.filter((r) => r !== role);
+      if (checked) return Array.from(new Set([...prev, role]));
+      return prev.filter((r) => r !== role);
     });
-  }
-
-  function selectParent(checked: boolean) {
-    if (checked) {
-      setRoles(['parent']);
-      return;
-    }
-    setRoles(['student']);
-    setDateOfBirth('');
   }
 
   async function onSubmit(e: FormEvent) {
@@ -109,7 +99,9 @@ export function ChooseUsernamePage() {
       await claimUsername(check.username, extras);
       await refreshProfile();
       if (isGoogleOnboarding) {
-        navigate(extras?.roles?.includes('parent') ? '/family' : '/welcome', { replace: true });
+        const nextRoles = extras?.roles ?? [];
+        const parentOnly = nextRoles.length === 1 && nextRoles[0] === 'parent';
+        navigate(parentOnly ? '/family' : '/welcome', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
@@ -126,7 +118,7 @@ export function ChooseUsernamePage() {
         <h1>{isGoogleOnboarding ? 'Finish your GoMUN account' : 'Choose a username'}</h1>
         <p className="muted">
           {isGoogleOnboarding
-            ? 'Pick a unique @handle, how your name shows, and your role. Parent accounts are parent-only for now.'
+            ? 'Pick a unique @handle, how your name shows, and your roles. You can combine student, teacher, and parent.'
             : 'Your account was created before usernames were required. Pick a unique @handle — you can change it anytime from your profile.'}
         </p>
 
@@ -173,7 +165,7 @@ export function ChooseUsernamePage() {
                   <input
                     type="checkbox"
                     checked={roles.includes('student')}
-                    onChange={(e) => toggleStudentTeacher('student', e.target.checked)}
+                    onChange={(e) => toggleRole('student', e.target.checked)}
                   />
                   <span>Student / delegate</span>
                 </label>
@@ -181,7 +173,7 @@ export function ChooseUsernamePage() {
                   <input
                     type="checkbox"
                     checked={roles.includes('teacher')}
-                    onChange={(e) => toggleStudentTeacher('teacher', e.target.checked)}
+                    onChange={(e) => toggleRole('teacher', e.target.checked)}
                   />
                   <span>Teacher / advisor</span>
                 </label>
@@ -189,13 +181,14 @@ export function ChooseUsernamePage() {
                   <input
                     type="checkbox"
                     checked={parentSelected}
-                    onChange={(e) => selectParent(e.target.checked)}
+                    onChange={(e) => toggleRole('parent', e.target.checked)}
                   />
                   <span>Parent / guardian</span>
                 </label>
               </div>
               <p className="field-hint">
-                Parent is exclusive in V1 (not combined with student or teacher yet).
+                Select any combination. Parent unlocks Family; student/teacher unlock classrooms and
+                practice.
               </p>
             </fieldset>
 

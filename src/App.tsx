@@ -1,7 +1,9 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { SiteFooter, SiteHeader } from './components/layout/SiteChrome';
+import { rememberLastAppPath } from './lib/navigation';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -19,11 +21,20 @@ import { AdminStatsPage } from './pages/AdminStatsPage';
 import { FamilyPage } from './pages/FamilyPage';
 import { ProgressPage } from './pages/ProgressPage';
 
+function LastPathTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    rememberLastAppPath(location.pathname, location.search);
+  }, [location.pathname, location.search]);
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <div className="app-frame">
+          <LastPathTracker />
           <SiteHeader />
           <Routes>
             <Route path="/" element={<LandingPage />} />

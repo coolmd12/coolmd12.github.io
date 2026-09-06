@@ -1,16 +1,18 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCapabilities, isParentOnly } from '../../types';
+import { formatCapabilities, isParentAccount, isParentOnly } from '../../types';
 import { isFounderEmail } from '../../services/stats';
 
 export function SiteHeader() {
   const { user, profile, logout, configured } = useAuth();
+  const location = useLocation();
   const [showRoomsModal, setShowRoomsModal] = useState(false);
   const caps = formatCapabilities(profile);
   const showFounderStats = isFounderEmail(profile?.email || user?.email);
-  const parentAccount = isParentOnly(profile);
+  const parentOnly = isParentOnly(profile);
+  const parentCapable = isParentAccount(profile);
 
   useEffect(() => {
     if (!showRoomsModal) return;
@@ -52,12 +54,12 @@ export function SiteHeader() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          {user && !parentAccount ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
-          {user && !parentAccount ? <NavLink to="/progress">My progress</NavLink> : null}
-          {user && parentAccount ? <NavLink to="/family">Parent portal</NavLink> : null}
+          {user && !parentOnly ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
+          {user && !parentOnly ? <NavLink to="/progress">My progress</NavLink> : null}
+          {user && parentCapable ? <NavLink to="/family">Parent portal</NavLink> : null}
           <NavLink to="/conferences">Conferences</NavLink>
-          {!parentAccount ? <NavLink to="/practice">Practice</NavLink> : null}
-          {!parentAccount ? (
+          {!parentOnly ? <NavLink to="/practice">Practice</NavLink> : null}
+          {!parentOnly ? (
             <NavLink
               to="/rooms"
               onClick={(e: MouseEvent<HTMLAnchorElement>) => {
@@ -79,7 +81,12 @@ export function SiteHeader() {
           ) : null}
           {user ? (
             <>
-              <Link to="/profile" className="user-chip user-chip-link" aria-label="Edit profile">
+              <Link
+                to="/profile"
+                state={{ from: `${location.pathname}${location.search}` }}
+                className="user-chip user-chip-link"
+                aria-label="Edit profile"
+              >
                 <span className="avatar avatar-sm" aria-hidden="true">
                   {profile?.photoURL ? (
                     <img src={profile.photoURL} alt="" />

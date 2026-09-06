@@ -43,7 +43,7 @@ export function isParentAccount(profile: UserProfile | null | undefined): boolea
   return profileRoles(profile).includes('parent');
 }
 
-/** V1 parent-only accounts (no student/teacher caps on the same UID). */
+/** Parent-only accounts (no student/teacher caps on the same UID). */
 export function isParentOnly(profile: UserProfile | null | undefined): boolean {
   const roles = profileRoles(profile);
   return roles.length === 1 && roles[0] === 'parent';
@@ -53,7 +53,7 @@ export function canTeach(profile: UserProfile | null | undefined): boolean {
   return profileRoles(profile).includes('teacher');
 }
 
-/** Parents do not join classrooms as members in V1. */
+/** Parent-only accounts do not join classrooms; multi-role parents with student/teacher can. */
 export function canJoin(profile: UserProfile | null | undefined): boolean {
   return !isParentOnly(profile);
 }
@@ -75,9 +75,9 @@ export function formatCapabilities(profile: UserProfile | null | undefined): str
 }
 
 /**
- * Normalize signup multi-select → primary role + roles array.
- * V1: parent is exclusive (cannot mix with student/teacher).
- * Teacher preferred as primary when both student + teacher.
+ * Normalize signup / profile multi-select → primary role + roles array.
+ * Parent may combine with student and/or teacher.
+ * Primary preference: teacher → student → parent.
  */
 export function normalizeAccountRoles(selected: UserRole[]): {
   role: UserRole;
@@ -89,15 +89,10 @@ export function normalizeAccountRoles(selected: UserRole[]): {
   if (!unique.length) {
     throw new Error('Choose at least one role: student, teacher, or parent.');
   }
-  if (unique.includes('parent')) {
-    if (unique.length > 1) {
-      throw new Error('Parent accounts are parent-only for now. Multi-role comes later.');
-    }
-    return { role: 'parent', roles: ['parent'] };
-  }
   const roles: UserRole[] = [];
   if (unique.includes('teacher')) roles.push('teacher');
   if (unique.includes('student')) roles.push('student');
+  if (unique.includes('parent')) roles.push('parent');
   return { role: roles[0]!, roles };
 }
 

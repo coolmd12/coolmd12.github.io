@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { parseParentDateOfBirth } from '../lib/dateOfBirth';
+import { resolveReturnPath } from '../lib/navigation';
 import { updateUserProfile } from '../services/auth';
 import {
   ensureFamilyCode,
@@ -31,6 +32,8 @@ function initialsFromName(name: string) {
 
 export function ProfilePage() {
   const { profile, refreshProfile, deleteAccount } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -48,23 +51,18 @@ export function ProfilePage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-  const parentAccount = isParentOnly(profile);
-  const parentSelected = roles.length === 1 && roles[0] === 'parent';
+  const wasParentOnly = isParentOnly(profile);
+  const parentSelected = roles.includes('parent');
+  const practiceSelected = roles.includes('student') || roles.includes('teacher');
+  const savedHasPractice = profileRoles(profile).some(
+    (r) => r === 'student' || r === 'teacher',
+  );
 
-  function toggleStudentTeacher(role: 'student' | 'teacher', checked: boolean) {
+  function toggleRole(role: UserRole, checked: boolean) {
     setRoles((prev) => {
-      const withoutParent = prev.filter((r) => r !== 'parent');
-      if (checked) return Array.from(new Set([...withoutParent, role]));
-      return withoutParent.filter((r) => r !== role);
+      if (checked) return Array.from(new Set([...prev, role]));
+      return prev.filter((r) => r !== role);
     });
-  }
-
-  function selectParent(checked: boolean) {
-    if (checked) {
-      setRoles(['parent']);
-      return;
-    }
-    setRoles(['student']);
   }
 
   useEffect(() => {
@@ -81,6 +79,8 @@ export function ProfilePage() {
     };
   }, [showDeleteModal, deleteBusy]);
 
+  // Hydrate once per account — do not reset on every profile object refresh
+  // (family-code loads used to call refreshProfile in a loop and wipe edits).
   useEffect(() => {
     if (!profile) return;
     setDisplayName(profile.displayName);
@@ -88,19 +88,17 @@ export function ProfilePage() {
     setSchool(profile.school || '');
     setDateOfBirth(profile.dateOfBirth || '');
     setRoles(profileRoles(profile).length ? profileRoles(profile) : ['student']);
-  }, [profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: uid only
+  }, [profile?.uid]);
 
   useEffect(() => {
     let cancelled = false;
     async function loadFamily() {
-      if (!profile || parentAccount) return;
+      if (!profile || !savedHasPractice) return;
       try {
         const withCode = await ensureFamilyCode(profile);
         if (!cancelled) {
           setFamilyCode(withCode.familyCode || '');
-          if (withCode.familyCode && !profile.familyCode) {
-            await refreshProfile();
-          }
         }
         const links = await listParentLinksForStudent(profile.uid);
         if (!cancelled) setParentLinks(links);
@@ -112,7 +110,9 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [profile, parentAccount, refreshProfile]);
+    // Family code lives in familyCodes/, not on the user doc — never refreshProfile here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uid + practice flag only
+  }, [profile?.uid, savedHasPractice]);
 
   if (!profile) {
     return (
@@ -145,38 +145,50 @@ export function ProfilePage() {
     let normalized;
     let nextDob: string | undefined;
     try {
-      if (parentAccount || parentSelected) {
+      normalized = normalizeAccountRoles(roles);
+      if (normalized.roles.includes('parent')) {
         const dobCheck = parseParentDateOfBirth(dateOfBirth);
         if (dobCheck.ok === false) {
           setError(dobCheck.error);
           return;
         }
         nextDob = dobCheck.dateOfBirth;
-        normalized = normalizeAccountRoles(['parent']);
-      } else {
-        normalized = normalizeAccountRoles(roles.filter((r) => r !== 'parent'));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Choose at least one role.');
       return;
     }
 
+    const nextParentOnly =
+      normalized.roles.length === 1 && normalized.roles[0] === 'parent';
+
     setBusy(true);
     try {
       await updateUserProfile({
         displayName: nameCheck.displayName,
         username: usernameCheck.username,
-        school: parentSelected || parentAccount ? undefined : school,
+        school: practiceSelected ? school : undefined,
         roles: normalized.roles,
-        ...((parentSelected || parentAccount) && nextDob ? { dateOfBirth: nextDob } : {}),
-        ...((parentSelected || parentAccount) ? { profileSetupComplete: true } : {}),
+        ...(normalized.roles.includes('parent') && nextDob ? { dateOfBirth: nextDob } : {}),
+        ...(nextParentOnly ? { profileSetupComplete: true } : {}),
       });
       await refreshProfile();
-      if (parentSelected && !parentAccount) {
-        window.location.replace('/family');
+
+      const nextProfile = {
+        ...current,
+        role: normalized.role,
+        roles: normalized.roles,
+        ...(nextDob ? { dateOfBirth: nextDob } : {}),
+      };
+
+      // Parent-only accounts always land on Family after picking that exclusive role.
+      if (nextParentOnly) {
+        navigate('/family', { replace: true });
         return;
       }
-      setOk('Profile saved.');
+
+      const fallback = homePathForProfile(nextProfile);
+      navigate(resolveReturnPath(location.state, fallback), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save profile.');
     } finally {
@@ -260,13 +272,13 @@ export function ProfilePage() {
         <div>
           <h1>Your profile</h1>
           <p className="muted">
-            {parentAccount
+            {wasParentOnly && !practiceSelected
               ? 'Customize how you appear in Family.'
-              : 'Customize how you appear in classrooms and sessions.'}
+              : 'Customize how you appear in classrooms, sessions, and Family.'}
           </p>
         </div>
         <Link to={homePathForProfile(current)} className="btn btn-secondary">
-          {parentAccount ? 'Back to parent portal' : 'Back to dashboard'}
+          {wasParentOnly && !practiceSelected ? 'Back to parent portal' : 'Back to dashboard'}
         </Link>
       </header>
 
@@ -279,7 +291,7 @@ export function ProfilePage() {
             <span>{initials}</span>
           </div>
           <p className="muted profile-hint">
-            {parentAccount
+            {parentSelected && !practiceSelected
               ? 'Your initials appear on your Family account.'
               : 'Your initials appear in rooms and classrooms.'}
           </p>
@@ -308,46 +320,41 @@ export function ProfilePage() {
           <span className="field-hint">Letters, numbers, underscores, and periods only.</span>
         </label>
 
-        {!parentAccount ? (
-          <fieldset className="role-fieldset">
-            <legend>I am a…</legend>
-            <div className="role-cards">
-              <label className={`role-card ${roles.includes('student') ? 'selected' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={roles.includes('student')}
-                  onChange={(e) => toggleStudentTeacher('student', e.target.checked)}
-                />
-                <span>Student / delegate</span>
-              </label>
-              <label className={`role-card ${roles.includes('teacher') ? 'selected' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={roles.includes('teacher')}
-                  onChange={(e) => toggleStudentTeacher('teacher', e.target.checked)}
-                />
-                <span>Teacher / advisor</span>
-              </label>
-              <label className={`role-card ${parentSelected ? 'selected' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={parentSelected}
-                  onChange={(e) => selectParent(e.target.checked)}
-                />
-                <span>Parent / guardian</span>
-              </label>
-            </div>
-            <p className="field-hint">
-              Parent is exclusive in V1 — switching saves your profile and opens the parent portal.
-            </p>
-          </fieldset>
-        ) : (
-          <p className="muted">
-            Account type: <strong>Parent / guardian</strong> (parent-only in V1).
+        <fieldset className="role-fieldset">
+          <legend>I am a…</legend>
+          <div className="role-cards">
+            <label className={`role-card ${roles.includes('student') ? 'selected' : ''}`}>
+              <input
+                type="checkbox"
+                checked={roles.includes('student')}
+                onChange={(e) => toggleRole('student', e.target.checked)}
+              />
+              <span>Student / delegate</span>
+            </label>
+            <label className={`role-card ${roles.includes('teacher') ? 'selected' : ''}`}>
+              <input
+                type="checkbox"
+                checked={roles.includes('teacher')}
+                onChange={(e) => toggleRole('teacher', e.target.checked)}
+              />
+              <span>Teacher / advisor</span>
+            </label>
+            <label className={`role-card ${parentSelected ? 'selected' : ''}`}>
+              <input
+                type="checkbox"
+                checked={parentSelected}
+                onChange={(e) => toggleRole('parent', e.target.checked)}
+              />
+              <span>Parent / guardian</span>
+            </label>
+          </div>
+          <p className="field-hint">
+            Add or remove any combination. Parent unlocks the parent portal; student/teacher unlock
+            classrooms and practice rooms.
           </p>
-        )}
+        </fieldset>
 
-        {parentAccount || parentSelected ? (
+        {parentSelected ? (
           <label>
             Date of birth
             <input
@@ -359,7 +366,9 @@ export function ProfilePage() {
             />
             <span className="field-hint">Required for the parent portal (18 or older).</span>
           </label>
-        ) : (
+        ) : null}
+
+        {practiceSelected ? (
           <label>
             School / club (optional)
             <input
@@ -369,7 +378,7 @@ export function ProfilePage() {
               placeholder="ex: Lincoln High MUN"
             />
           </label>
-        )}
+        ) : null}
 
         <label>
           Email
@@ -382,7 +391,7 @@ export function ProfilePage() {
         </button>
       </form>
 
-      {!parentAccount && !parentSelected ? (
+      {savedHasPractice ? (
         <section className="auth-panel profile-panel family-code-panel">
           <h2>Family code</h2>
           <p className="muted">
