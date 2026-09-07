@@ -38,7 +38,7 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Live committee room (speakers, motions, timers, chat)              | Phase 2 done — core floor, chat, session start/stop, audio cues             |
 | AI practice + prep Q&A assistant (Gemini)                          | Later (Phase 3)                                                             |
 | RoP cheat sheets · Scripts of Motions                              | Done — Phase 5.1 (`/motions`)                                               |
-| Terms and Conditions (practice vs conference · honesty · AI)       | Done — with 5.1 (`/terms`)                                                  |
+| Terms and Conditions (practice vs conference · honesty · AI)       | Done — with 5.1 (`/terms-and-conditions`)                                   |
 | Header / nav chrome                                                | Done — single-row desktop nav + hamburger under ~1024px; photos unchanged   |
 | Resolution / position-paper tools · prep notes · tutorials         | Later (rest of Phase 5)                                                     |
 | Conference filters / ops                                           | Later (Phase 4, after 5.1)                                                  |
@@ -156,7 +156,7 @@ Do **not** commit `.env.local` or secrets.
 
 | Path                                 | Purpose                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------ |
-| `src/pages/`                         | Screens (landing, auth, welcome, dashboard, progress, motions, terms, rooms, admin, family, …) |
+| `src/pages/`                         | Screens (landing, auth, welcome, dashboard, progress, motions, terms-and-conditions, rooms, admin, family, …) |
 | `src/data/motionScripts.ts`          | Static GoMUN Practice Script for `/motions`                                    |
 | `src/services/`                      | Auth, classrooms, rooms, motions, messages, activity, stats                    |
 | `src/contexts/AuthContext.tsx`       | Signed-in user + profile                                                       |
@@ -166,7 +166,7 @@ Do **not** commit `.env.local` or secrets.
 | `OUTLINE.md`                         | Condensed README + roadmap                                                     |
 | `ROADMAP.md`                         | Full phased product plan                                                       |
 | `GTM.md`                             | Go-to-market + Founder's Stats metric plan                                     |
-| `TERMS.md`                           | Product Terms and Conditions draft                                             |
+| `TERMS_AND_CONDITIONS.md`            | Product Terms and Conditions draft                                             |
 | `.github/workflows/deploy-pages.yml` | GitHub Pages deploy                                                            |
 
 
@@ -232,12 +232,12 @@ Optional voice (then video) **inside** a live committee room so clubs don’t *h
 | [README.md](./README.md)   | Setup + how the app works today                |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next                 |
 | [GTM.md](./GTM.md)         | Go-to-market plan + Founder Stats metric needs |
-| [TERMS.md](./TERMS.md)     | Product Terms and Conditions draft             |
+| [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) | Product Terms and Conditions draft |
 
 
 **Next steps:** Rest of Phase 5 (tutorials / notes / drafting structure) or Phase 4 conference filters — discuss next. Phase 3 AI stays deferred and integrity-bound. Keep Founder's Stats baselines + GTM cadence. Room UX polish anytime.
 
-**Legal note:** On-site Terms and Conditions (`/terms`, [TERMS.md](./TERMS.md)) are a product draft for user expectations. Have them reviewed by a lawyer before treating them as formal legal advice or relying on them in a dispute. Procedure (`/motions`) is a practice aid — not official conference RoP.
+**Legal note:** On-site Terms and Conditions (`/terms-and-conditions`, [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md)) are a product draft for user expectations. Have them reviewed by a lawyer before treating them as formal legal advice or relying on them in a dispute. Procedure (`/motions`) is a practice aid — not official conference RoP.
 
 **Founder's Stats (Phase 2.7 shipped):** Live counters bump from service writes into `stats/product`; registered users stay on `stats/app`. See [ROADMAP.md](./ROADMAP.md) § Phase 2.7 and [GTM.md](./GTM.md).
 

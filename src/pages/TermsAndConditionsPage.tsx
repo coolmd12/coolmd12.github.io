@@ -6,7 +6,7 @@ const EFFECTIVE = 'September 6, 2026';
  * Product Terms and Conditions — expectation-setting draft for users.
  * Not a substitute for advice from a licensed attorney.
  */
-export function TermsPage() {
+export function TermsAndConditionsPage() {
   return (
     <main className="shell legal-page">
       <header className="page-header">

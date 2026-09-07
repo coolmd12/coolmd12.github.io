@@ -68,7 +68,7 @@ Google proves the email; no Resend verification code in the current UI.
 | Email/password + Resend codes | Parked (needs verified sending domain) |
 | AI (Gemini) | Phase 3 — deferred (free/Spark path TBD) |
 | RoP / Scripts of Motions | Done — Phase 5.1 (`/motions`) |
-| Terms and Conditions | Done — with 5.1 (`/terms`) |
+| Terms and Conditions | Done — with 5.1 (`/terms-and-conditions`) |
 | Header / nav chrome | Done — single-row desktop nav, hamburger under ~1024px; **do not** darken hero/auth photos |
 | Conference filters | Phase 4 (after 5.1) |
 | Tutorials / inbox / drafting tools / notes | Phase 5 (after 5.1) |
@@ -174,4 +174,4 @@ Extra MUN help is welcome — **integrity first:** tools guide format/procedure 
 | **README.md** | Setup, flow, layout |
 | **ROADMAP.md** | Phases, checklists, decisions |
 | **GTM.md** | Go-to-market plan + metrics for Founder's Stats |
-| **TERMS.md** | Product Terms and Conditions draft (same substance as `/terms`) |
+| **TERMS_AND_CONDITIONS.md** | Product Terms and Conditions draft (same substance as `/terms-and-conditions`) |

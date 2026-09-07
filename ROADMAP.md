@@ -74,7 +74,7 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | AI tools (Gemini) + prep Q&A assistant | Not built — deferred | Phase 3; backend TBD (stay free / Spark). |
 | Conference filters / ops | Not built — after Phase 5.1 | Phase 4 parked until procedure learning tools land. |
 | RoP / Scripts of Motions | Done (Phase 5.1) | `/motions` GoMUN Practice Script + integrity banner. |
-| Terms and Conditions (`/terms`) | Done (with 5.1) | Practice vs conference; academic honesty; AI integrity. |
+| Terms and Conditions (`/terms-and-conditions`) | Done (with 5.1) | Practice vs conference; academic honesty; AI integrity. |
 | Header / nav chrome | Done | Single-row desktop nav + hamburger under ~1024px; hero/auth photos unchanged. |
 | Tutorials / inbox / drafting / notes | Not built | Rest of Phase 5 after 5.1. |
 | In-app calling (voice/video) | Not built — Later | Meet/Zoom links until then. |
@@ -289,7 +289,7 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - **Signed-in** for full page; parent-only accounts hide nav (same as Practice).
 - Static curated content (`src/data/…`); no AI; no Firestore.
 - Print-friendly CSS if easy.
-- **Integrity:** Reference / practice aid only — **not** official conference RoP, **not** writing help, **not** a substitute for a conference’s academic-honesty or AI policy. Users must follow their conference’s rules (many ban generative AI during conference / for papers). See **Legal / Terms and Conditions** below and on-site `/terms`.
+- **Integrity:** Reference / practice aid only — **not** official conference RoP, **not** writing help, **not** a substitute for a conference’s academic-honesty or AI policy. Users must follow their conference’s rules (many ban generative AI during conference / for papers). See **Legal / Terms and Conditions** below and on-site `/terms-and-conditions`.
 
 **Build:**
 
@@ -312,8 +312,8 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 
 **Build:**
 
-- [x] `/terms` page + footer **Terms and Conditions** link
-- [x] Repo draft [TERMS.md](./TERMS.md) (same substance as the page)
+- [x] `/terms-and-conditions` page + footer **Terms and Conditions** link
+- [x] Repo draft [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) (same substance as the page)
 - [x] Cross-link from Procedure page and Practice hub
 - [x] Note in README that Terms and Conditions are a product draft, not a substitute for counsel
 
@@ -387,7 +387,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**
 6. ~~Parent activity reliability + student `/progress`~~ **Done**
 7. ~~**Phase 2.7 Founder Stats + GTM metrics**~~ **Done** (richer `/admin`; see [GTM.md](./GTM.md))
-8. ~~Terms and Conditions (`/terms`) + Phase 5.1 Procedure / Scripts of Motions~~ **Done**
+8. ~~Terms and Conditions (`/terms-and-conditions`) + Phase 5.1 Procedure / Scripts of Motions~~ **Done**
 9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred; integrity-bound) · **Phase 6** calling · optional GA4
 
 ---
@@ -407,7 +407,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Parent portal:** Accounts with `parent` capability; link via student family code; `/family` is an Aeries-style read-only activity portal + rule-based monthly summaries; parents set **date of birth** (must be 18+; no ID upload). Parent-only accounts skip Dashboard; multi-role parents get both.
 - **Student My progress:** `/progress` uses the same activity log + room/classroom backfill as the parent portal, for the signed-in student.
 - **Parent activity queries:** Linked parents read member docs by classroom id (rules: `linkedParentOf`); do not use `collectionGroup('members')` with bare `documentId()`. Isolate per-source failures.
-- **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them. **Conference policies vary** (many ban generative AI during committee and/or for papers); users must follow their conference and school rules. Terms and Conditions (`/terms`) state this explicitly.
+- **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them. **Conference policies vary** (many ban generative AI during committee and/or for papers); users must follow their conference and school rules. Terms and Conditions (`/terms-and-conditions`) state this explicitly.
 - **Next product bet:** Rest of Phase 5 (tutorials / notes / drafting structure) or Phase 4 conference filters — discuss next. Phase 5.1 Procedure + Terms and Conditions are shipped.
 
 ---
@@ -430,4 +430,4 @@ Two future product lanes will expand the platform beyond basic classroom practic
 | [README.md](./README.md) | Setup and current app flow |
 | [ROADMAP.md](./ROADMAP.md) | Full phased product plan (this file) |
 | [GTM.md](./GTM.md) | Go-to-market plan + Founder Stats metric needs |
-| [TERMS.md](./TERMS.md) | Product Terms and Conditions draft |
+| [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) | Product Terms and Conditions draft |

@@ -71,7 +71,7 @@ export function MotionsPage() {
       <section className="banner integrity-banner" role="note">
         <p>{MOTION_SCRIPT_DISCLAIMER}</p>
         <p className="integrity-banner-links">
-          <Link to="/terms">Terms and Conditions</Link>
+          <Link to="/terms-and-conditions">Terms and Conditions</Link>
           {' · '}
           Academic honesty and conference AI policies are your responsibility.
         </p>
@@ -110,7 +110,7 @@ export function MotionsPage() {
       <p className="panel-footer-link">
         <Link to="/practice">Practice hub</Link>
         {' · '}
-        <Link to="/terms">Terms and Conditions</Link>
+        <Link to="/terms-and-conditions">Terms and Conditions</Link>
       </p>
     </main>
   );

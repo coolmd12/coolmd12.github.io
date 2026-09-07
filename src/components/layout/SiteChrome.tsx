@@ -288,7 +288,7 @@ export function SiteFooter() {
           <p>Genuinely free practice for students and teachers.</p>
           <p className="footer-meta">Founded by Dhyanvi Mehta</p>
           <p className="footer-legal-links">
-            <Link to="/terms">Terms and Conditions</Link>
+            <Link to="/terms-and-conditions">Terms and Conditions</Link>
           </p>
         </div>
         <p className="footer-note">
