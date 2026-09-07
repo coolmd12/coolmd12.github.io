@@ -29,7 +29,8 @@ export function SetupPage() {
         </li>
         <li>
           Create a Firestore database in production mode, then publish rules from{' '}
-          <code>firebase/firestore.rules</code> (includes the user-count <code>stats</code> doc).
+          <code>firebase/firestore.rules</code> (includes <code>stats/app</code> +{' '}
+          <code>stats/product</code>).
         </li>
         <li>
           Register a Web app and copy config values into <code>.env.local</code> using{' '}
@@ -39,9 +40,9 @@ export function SetupPage() {
           Run <code>npm run dev</code>, then <strong>Continue with Google</strong> on signup.
         </li>
         <li>
-          Founder user count: log in as <code>dhyanvim@gmail.com</code> →{' '}
-          <strong>Founder&apos;s Stats</strong> in the nav (only that account). Or Firebase →
-          Authentication → Users for the exact Auth list.
+          Founder Stats: log in as <code>dhyanvim@gmail.com</code> →{' '}
+          <strong>Founder&apos;s Stats</strong> → run <strong>Backfill from existing data</strong>{' '}
+          once after publishing rules. Exact Auth list: Firebase → Authentication → Users.
         </li>
       </ol>
 

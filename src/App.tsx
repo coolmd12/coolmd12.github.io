@@ -20,6 +20,8 @@ import RoomsPage from './pages/RoomsPage';
 import { AdminStatsPage } from './pages/AdminStatsPage';
 import { FamilyPage } from './pages/FamilyPage';
 import { ProgressPage } from './pages/ProgressPage';
+import { MotionsPage } from './pages/MotionsPage';
+import { TermsPage } from './pages/TermsPage';
 
 function LastPathTracker() {
   const location = useLocation();
@@ -40,6 +42,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/conferences" element={<ConferencesPage />} />
             <Route path="/practice" element={<PracticePage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="/rooms" element={<RoomsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -49,6 +52,7 @@ export default function App() {
               <Route path="/welcome" element={<WelcomeSetupPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/progress" element={<ProgressPage />} />
+              <Route path="/motions" element={<MotionsPage />} />
               <Route path="/family" element={<FamilyPage />} />
               <Route path="/admin" element={<AdminStatsPage />} />
               <Route path="/profile" element={<ProfilePage />} />

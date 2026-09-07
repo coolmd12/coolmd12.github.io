@@ -2,37 +2,108 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatCapabilities, isParentAccount, isParentOnly } from '../../types';
+import { isParentAccount, isParentOnly } from '../../types';
 import { isFounderEmail } from '../../services/stats';
 
 export function SiteHeader() {
   const { user, profile, logout, configured } = useAuth();
   const location = useLocation();
   const [showRoomsModal, setShowRoomsModal] = useState(false);
-  const caps = formatCapabilities(profile);
+  const [menuOpen, setMenuOpen] = useState(false);
   const showFounderStats = isFounderEmail(profile?.email || user?.email);
   const parentOnly = isParentOnly(profile);
   const parentCapable = isParentAccount(profile);
 
   useEffect(() => {
-    if (!showRoomsModal) return;
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!showRoomsModal && !menuOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowRoomsModal(false);
+      if (e.key === 'Escape') {
+        setShowRoomsModal(false);
+        setMenuOpen(false);
+      }
     };
-    // Prevent background scroll while modal is open
     const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    if (menuOpen || showRoomsModal) {
+      document.body.style.overflow = 'hidden';
+    }
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [showRoomsModal]);
+  }, [showRoomsModal, menuOpen]);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  const navLinks = (
+    <>
+      <NavLink to="/" end onClick={closeMenu}>
+        Home
+      </NavLink>
+      {user && !parentOnly ? (
+        <NavLink to="/dashboard" onClick={closeMenu}>
+          Dashboard
+        </NavLink>
+      ) : null}
+      {user && !parentOnly ? (
+        <NavLink to="/progress" onClick={closeMenu}>
+          Progress
+        </NavLink>
+      ) : null}
+      {user && parentCapable ? (
+        <NavLink to="/family" onClick={closeMenu}>
+          Family
+        </NavLink>
+      ) : null}
+      <NavLink to="/conferences" onClick={closeMenu}>
+        Conferences
+      </NavLink>
+      {!parentOnly ? (
+        <NavLink to="/practice" onClick={closeMenu}>
+          Practice
+        </NavLink>
+      ) : null}
+      {user && !parentOnly ? (
+        <NavLink to="/motions" onClick={closeMenu}>
+          Procedure
+        </NavLink>
+      ) : null}
+      {!parentOnly ? (
+        <NavLink
+          to="/rooms"
+          onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+            closeMenu();
+            if (!user) {
+              e.preventDefault();
+              setShowRoomsModal(true);
+            }
+          }}
+        >
+          Rooms
+        </NavLink>
+      ) : null}
+      {showFounderStats ? (
+        <NavLink to="/admin" title="Founder's Stats" onClick={closeMenu}>
+          Stats
+        </NavLink>
+      ) : null}
+    </>
+  );
+
+  const handleLabel = profile?.username
+    ? `@${profile.username}`
+    : profile?.displayName || 'Delegate';
 
   return (
     <header className="site-header">
       <div className="shell header-inner">
-        <Link to="/" className="brand">
+        <Link to="/" className="brand" onClick={closeMenu}>
           <span className="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
               <g transform="translate(16 15) rotate(-38) translate(-16 -15)">
@@ -50,35 +121,12 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="nav" aria-label="Primary">
-          <NavLink to="/" end>
-            Home
-          </NavLink>
-          {user && !parentOnly ? <NavLink to="/dashboard">Dashboard</NavLink> : null}
-          {user && !parentOnly ? <NavLink to="/progress">My progress</NavLink> : null}
-          {user && parentCapable ? <NavLink to="/family">Parent portal</NavLink> : null}
-          <NavLink to="/conferences">Conferences</NavLink>
-          {!parentOnly ? <NavLink to="/practice">Practice</NavLink> : null}
-          {!parentOnly ? (
-            <NavLink
-              to="/rooms"
-              onClick={(e: MouseEvent<HTMLAnchorElement>) => {
-                if (!user) {
-                  e.preventDefault();
-                  setShowRoomsModal(true);
-                }
-              }}
-            >
-              Rooms
-            </NavLink>
-          ) : null}
-          {showFounderStats ? <NavLink to="/admin">Founder&apos;s Stats</NavLink> : null}
+        <nav className="nav nav-desktop" aria-label="Primary">
+          {navLinks}
         </nav>
 
         <div className="header-actions">
-          {!configured ? (
-            <span className="setup-chip">Setup Firebase</span>
-          ) : null}
+          {!configured ? <span className="setup-chip">Setup Firebase</span> : null}
           {user ? (
             <>
               <Link
@@ -86,6 +134,12 @@ export function SiteHeader() {
                 state={{ from: `${location.pathname}${location.search}` }}
                 className="user-chip user-chip-link"
                 aria-label="Edit profile"
+                title={
+                  profile?.displayName
+                    ? `${handleLabel} · ${profile.displayName}`
+                    : handleLabel
+                }
+                onClick={closeMenu}
               >
                 <span className="avatar avatar-sm" aria-hidden="true">
                   {profile?.photoURL ? (
@@ -102,30 +156,12 @@ export function SiteHeader() {
                   )}
                 </span>
                 <span className="user-chip-text">
-                  {profile?.username ? (
-                    <>
-                      <span className="user-chip-name">@{profile.username}</span>
-                      {profile.displayName ? (
-                        <span className="user-chip-meta">{profile.displayName}</span>
-                      ) : caps ? (
-                        <span className="user-chip-meta">{caps}</span>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <span className="user-chip-name">{profile?.displayName || 'Delegate'}</span>
-                      {caps ? <span className="user-chip-meta">{caps}</span> : null}
-                    </>
-                  )}
-                </span>
-                <span className="user-chip-tip" aria-hidden="true">
-                  Edit profile
+                  <span className="user-chip-name">{handleLabel}</span>
                 </span>
               </Link>
               <button
                 type="button"
-                className="btn btn-ghost header-action-tip"
-                data-tip="End session"
+                className="btn btn-ghost header-signout"
                 onClick={() => void logout()}
               >
                 Sign out
@@ -133,16 +169,74 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Link to="/login" className="btn btn-ghost header-action-tip" data-tip="Welcome back">
+              <Link to="/login" className="btn btn-ghost">
                 Log in
               </Link>
-              <Link to="/signup" className="btn btn-primary header-action-tip" data-tip="Create a free account">
+              <Link to="/signup" className="btn btn-primary">
                 Sign up
               </Link>
             </>
           )}
+
+          <button
+            type="button"
+            className={`nav-toggle ${menuOpen ? 'is-open' : ''}`}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </div>
+
+      <div
+        id="mobile-nav"
+        className={`nav-drawer ${menuOpen ? 'is-open' : ''}`}
+        hidden={!menuOpen}
+      >
+        <nav className="nav nav-mobile" aria-label="Mobile">
+          {navLinks}
+          {user ? (
+            <>
+              <Link to="/profile" onClick={closeMenu}>
+                Profile
+              </Link>
+              <button
+                type="button"
+                className="nav-mobile-signout"
+                onClick={() => {
+                  closeMenu();
+                  void logout();
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" onClick={closeMenu}>
+                Log in
+              </Link>
+              <Link to="/signup" onClick={closeMenu}>
+                Sign up
+              </Link>
+            </>
+          )}
+        </nav>
+      </div>
+      {menuOpen ? (
+        <button
+          type="button"
+          className="nav-drawer-backdrop"
+          aria-label="Close menu"
+          onClick={closeMenu}
+        />
+      ) : null}
+
       {showRoomsModal
         ? createPortal(
             <div className="modal-overlay modal-centered" role="dialog" aria-modal="true">
@@ -161,10 +255,18 @@ export function SiteHeader() {
                   start or log in to join rooms.
                 </p>
                 <div className="modal-actions">
-                  <Link to="/signup" className="btn btn-primary btn-lg" onClick={() => setShowRoomsModal(false)}>
+                  <Link
+                    to="/signup"
+                    className="btn btn-primary btn-lg"
+                    onClick={() => setShowRoomsModal(false)}
+                  >
                     Sign up
                   </Link>
-                  <Link to="/login" className="btn btn-secondary btn-lg" onClick={() => setShowRoomsModal(false)}>
+                  <Link
+                    to="/login"
+                    className="btn btn-secondary btn-lg"
+                    onClick={() => setShowRoomsModal(false)}
+                  >
                     Log in
                   </Link>
                 </div>
@@ -185,10 +287,14 @@ export function SiteFooter() {
           <strong>GoMUN Delegate Arena</strong>
           <p>Genuinely free practice for students and teachers.</p>
           <p className="footer-meta">Founded by Dhyanvi Mehta</p>
+          <p className="footer-legal-links">
+            <Link to="/terms">Terms and Conditions</Link>
+          </p>
         </div>
         <p className="footer-note">
           Conference links point to organizers&apos; own sites. GoMUN does not host those
-          events.
+          events. Practice aids are not official RoP — follow your conference&apos;s academic
+          honesty and AI policies.
         </p>
       </div>
     </footer>

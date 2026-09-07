@@ -34,6 +34,7 @@ import {
 } from './committeeRoomLogic';
 import { logActivity } from './activity';
 import { syncMessageLabelsForUser } from './messages';
+import { bumpProductCounter, bumpProductCounters } from './stats';
 
 export type MyCommitteeRoom = Room & { relation: CommitteeRoomRelation };
 
@@ -276,6 +277,7 @@ export async function closeRoom(roomId: string, byUserId: string): Promise<void>
   const database = requireDb();
   const roomRef = doc(database, 'rooms', roomId);
   let roomName = 'Committee room';
+  let didClose = false;
   await runTransaction(database, async (tx) => {
     const snap = await tx.get(roomRef);
     if (!snap.exists()) throw new Error('Room not found.');
@@ -285,6 +287,7 @@ export async function closeRoom(roomId: string, byUserId: string): Promise<void>
       throw new Error('Only the host or chair can close this room.');
     }
     if (isRoomClosed(room)) return;
+    didClose = true;
     tx.update(roomRef, {
       closedAt: Date.now(),
       closedBy: byUserId,
@@ -294,12 +297,14 @@ export async function closeRoom(roomId: string, byUserId: string): Promise<void>
       ...bankPatchFromTimer(room, 'Room closed'),
     });
   });
+  if (!didClose) return;
   void logActivity(byUserId, {
     kind: 'room_closed',
     title: 'Closed a committee room',
     detail: roomName,
     subjectId: roomId,
   });
+  void bumpProductCounter('roomsClosed');
 }
 
 export async function createRoom(roomData: Omit<Room, 'roomId'>): Promise<Room | null> {
@@ -315,6 +320,7 @@ export async function createRoom(roomData: Omit<Room, 'roomId'>): Promise<Room |
     href: `/room/${room.roomId}`,
     at: roomData.createdAt,
   });
+  void bumpProductCounters({ roomsCreated: 1, sessionsStarted: 1 });
   return room;
 }
 
@@ -376,6 +382,7 @@ export async function joinRoom(input: {
       subjectId: input.roomId,
       href: `/room/${input.roomId}`,
     });
+    void bumpProductCounter('roomsJoined');
   }
 
   return participant;
@@ -581,6 +588,7 @@ export async function setRoomSessionStatus(
 ): Promise<void> {
   const database = requireDb();
   const roomRef = doc(database, 'rooms', roomId);
+  let resumed = false;
   await runTransaction(database, async (tx) => {
     const snap = await tx.get(roomRef);
     if (!snap.exists()) throw new Error('Room not found.');
@@ -594,9 +602,15 @@ export async function setRoomSessionStatus(
       });
       return;
     }
+    if (room.currentStatus !== 'open') {
+      resumed = true;
+    }
     tx.update(roomRef, {
       currentStatus: 'open',
       activeCaucus: null,
     });
   });
+  if (resumed) {
+    void bumpProductCounter('sessionsStarted');
+  }
 }

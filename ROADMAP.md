@@ -73,7 +73,9 @@ Free classroom-private Model UN (and later, Speech & Debate) practice rooms with
 | Account deletion | Done | Profile → delete account. |
 | AI tools (Gemini) + prep Q&A assistant | Not built — deferred | Phase 3; backend TBD (stay free / Spark). |
 | Conference filters / ops | Not built — after Phase 5.1 | Phase 4 parked until procedure learning tools land. |
-| RoP / Scripts of Motions | Next — Phase 5.1 | Thin Phase 5 slice; complements live floor. |
+| RoP / Scripts of Motions | Done (Phase 5.1) | `/motions` GoMUN Practice Script + integrity banner. |
+| Terms and Conditions (`/terms`) | Done (with 5.1) | Practice vs conference; academic honesty; AI integrity. |
+| Header / nav chrome | Done | Single-row desktop nav + hamburger under ~1024px; hero/auth photos unchanged. |
 | Tutorials / inbox / drafting / notes | Not built | Rest of Phase 5 after 5.1. |
 | In-app calling (voice/video) | Not built — Later | Meet/Zoom links until then. |
 | Speech & Debate (parallel practice mode) | Not built — Far future | Parked idea. |
@@ -270,29 +272,50 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [ ] Voting record compilation and analysis
 - [ ] Awards and recognition tracking
 
-### Phase 5 — Research tools & learning ⬅️ next (start with 5.1)
+### Phase 5 — Research tools & learning ⬅️ 5.1 done; more later
 
 **Goal:** Extra MUN help for delegates — procedure, formatting, drafting structure, and personal notes — without doing the academic work for them.
 
 **Integrity:** Tools guide format and procedure; the user always owns the writing. No ghostwriting.
 
-#### Phase 5.1 — Scripts of Motions / RoP cheat sheets ⬅️ next build
+#### Phase 5.1 — Scripts of Motions / RoP cheat sheets ⬅️ done
 
 **Goal:** A simple in-app reference so chairs and delegates can run procedure correctly beside the live floor.
 
-**Locked direction (draft for build brainstorm):**
+**Locked decisions:**
 
-- Pick a ruleset (e.g. UNA-USA-style vs THIMUN-style — exact sets TBD at build time).
-- Show a single-page (or printable) **Script of Motions**: common motions, who may raise them, vote type, typical phrasing — **reference only**, not auto-running room motions.
-- Signed-in access; link from nav and/or room help. No AI required; static/curated content is fine for V1.
-- Complements Phase 2 floor (helps motions feature depth / GTM quality).
+- **GoMUN Practice Script** — motions aligned with the live floor (moderated caucus, unmoderated caucus, adjourn) plus short GoMUN tips; optional light “reference only — not in room yet” extras for points (order/inquiry) clearly labeled.
+- Route **`/motions`**, nav label **Procedure**; links from Practice hub + in-room help (new tab).
+- **Signed-in** for full page; parent-only accounts hide nav (same as Practice).
+- Static curated content (`src/data/…`); no AI; no Firestore.
+- Print-friendly CSS if easy.
+- **Integrity:** Reference / practice aid only — **not** official conference RoP, **not** writing help, **not** a substitute for a conference’s academic-honesty or AI policy. Users must follow their conference’s rules (many ban generative AI during conference / for papers). See **Legal / Terms** below and on-site `/terms`.
 
 **Build:**
 
-- [ ] Ruleset picker + Scripts of Motions reference UI
-- [ ] Nav / discoverability (and optional in-room link)
-- [ ] Optional print / download-friendly layout
-- [ ] Doc + Founder's Stats note if we add a simple “opened cheat sheet” counter later (not required for 5.1)
+- [x] Ruleset = GoMUN Practice Script UI + disclaimer
+- [x] Nav / Practice / in-room discoverability
+- [x] Optional print layout
+- [x] Link Terms + academic-integrity callout on the page
+
+#### Legal / Terms and Conditions (ship with or just before Phase 5.1) ⬅️ done with 5.1
+
+**Goal:** Public Terms that set expectations for practice vs real conferences, academic honesty, and (future) AI tools — so GoMUN is not positioned as a cheating aid.
+
+**Must cover (draft; have a lawyer review before relying on it in a dispute):**
+
+- GoMUN is a **practice** product; conference organizers’ RoP and policies control at real events.
+- Users are responsible for following their **school honor code** and **conference academic-honesty / AI policies** (policies vary; many prohibit AI-written papers and AI use during committee).
+- Procedure cheat sheets and similar tools are **educational references**, not legal advice and not official RoP.
+- Future AI features (Phase 3) are for **prep help / resources / coaching only** — never to ghostwrite graded or conference-submitted work; GoMUN does not authorize using the product to violate a conference’s AI ban.
+- Limitation of liability, acceptable use, account termination, contact.
+
+**Build:**
+
+- [x] `/terms` page + footer **Terms and Conditions** link
+- [x] Repo draft [TERMS.md](./TERMS.md) (same substance as the page)
+- [x] Cross-link from Procedure page and Practice hub
+- [x] Note in README that Terms are a product draft, not a substitute for counsel
 
 #### Phase 5 — later slices (parked until after 5.1)
 
@@ -344,7 +367,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
   - Optional **dark** theme for users who prefer it (not the forced default).
   - Optional **warm / gold-accent** or high-contrast accessibility theme.
   - Themes should share the same layout and brand signals; only tokens (backgrounds, surfaces, text, accents) swap.
-  - Current site: light pages, dark header, gold nav underlines / dashboard accents. Do **not** brighten hero, login, or signup photos to chase contrast.
+  - Current site: light pages, dark header, gold nav underlines / dashboard accents, compact single-row nav (hamburger under ~1024px). Do **not** darken or brighten hero, login, or signup photos to chase contrast.
 - **In-app calling:** voice/video inside committee rooms so Meet/Zoom is optional, not required (Phase 6).
 - **Parent / guardian portal (V1 shipped; progress follow-ups done):**
   - Shipped: multi-role parent+student/teacher; family-code link; `/family` activity + monthly summaries; date of birth (18+).
@@ -364,8 +387,8 @@ Two future product lanes will expand the platform beyond basic classroom practic
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**
 6. ~~Parent activity reliability + student `/progress`~~ **Done**
 7. ~~**Phase 2.7 Founder Stats + GTM metrics**~~ **Done** (richer `/admin`; see [GTM.md](./GTM.md))
-8. Publish rules + `/admin` backfill (ops) · **Phase 5.1 Scripts of Motions / RoP cheat sheets** ⬅️ next
-9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred) · **Phase 6** calling · Photos when Blaze is OK · optional GA4
+8. ~~Terms and Conditions (`/terms`) + Phase 5.1 Procedure / Scripts of Motions~~ **Done**
+9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred; integrity-bound) · **Phase 6** calling · optional GA4
 
 ---
 
@@ -384,8 +407,8 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Parent portal:** Accounts with `parent` capability; link via student family code; `/family` is an Aeries-style read-only activity portal + rule-based monthly summaries; parents set **date of birth** (must be 18+; no ID upload). Parent-only accounts skip Dashboard; multi-role parents get both.
 - **Student My progress:** `/progress` uses the same activity log + room/classroom backfill as the parent portal, for the signed-in student.
 - **Parent activity queries:** Linked parents read member docs by classroom id (rules: `linkedParentOf`); do not use `collectionGroup('members')` with bare `documentId()`. Isolate per-source failures.
-- **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them.
-- **Next product bet:** **Phase 5.1** Scripts of Motions / RoP cheat sheets before Phase 4 conference work — strengthens the procedure floor loop for GTM.
+- **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them. **Conference policies vary** (many ban generative AI during committee and/or for papers); users must follow their conference and school rules. Terms and Conditions (`/terms`) state this explicitly.
+- **Next product bet:** Rest of Phase 5 (tutorials / notes / drafting structure) or Phase 4 conference filters — discuss next. Phase 5.1 Procedure + Terms are shipped.
 
 ---
 
@@ -407,3 +430,4 @@ Two future product lanes will expand the platform beyond basic classroom practic
 | [README.md](./README.md) | Setup and current app flow |
 | [ROADMAP.md](./ROADMAP.md) | Full phased product plan (this file) |
 | [GTM.md](./GTM.md) | Go-to-market plan + Founder Stats metric needs |
+| [TERMS.md](./TERMS.md) | Product Terms and Conditions draft |
