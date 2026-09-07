@@ -37,10 +37,28 @@ export function PracticePage() {
         </article>
 
         <article>
+          <h2>Procedure help</h2>
+          <p>
+            Scripts of Motions for GoMUN practice — what to propose, how votes work, and how
+            the live floor handles caucuses. Practice aid only; not official conference RoP.
+          </p>
+          {user ? (
+            <Link className="btn btn-secondary" to="/motions">
+              Open Procedure
+            </Link>
+          ) : (
+            <Link className="btn btn-secondary" to="/login">
+              Log in for Procedure
+            </Link>
+          )}
+        </article>
+
+        <article>
           <h2>Solo with AI</h2>
           <p>
             Practice speeches, points of order, and resolutions against Gemini-powered
-            delegates and an AI chair. Coming in the next build phase.
+            delegates and an AI chair. Coming later — coaching / resources only, never
+            ghostwriting for conferences.
           </p>
           <button className="btn btn-secondary" type="button" disabled>
             AI arena — soon

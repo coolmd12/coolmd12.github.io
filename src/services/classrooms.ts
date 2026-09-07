@@ -14,6 +14,7 @@ import { db, isFirebaseConfigured } from '../lib/firebase';
 import { generateInviteCode } from '../lib/utils';
 import { addClassroomToUser } from './auth';
 import { logActivity } from './activity';
+import { bumpProductCounter } from './stats';
 import { canTeach, type Classroom, type ClassroomMember, type UserProfile } from '../types';
 
 function requireDb() {
@@ -93,6 +94,7 @@ export async function createClassroom(input: {
     href: `/classroom/${classroom.id}`,
     at: classroom.createdAt,
   });
+  void bumpProductCounter('classroomsCreated');
   return classroom;
 }
 

@@ -38,7 +38,7 @@ Classroom-private **Model UN practice** for students and teachers: invite-code c
 1. **Continue with Google** (signup or login)  
 2. New users: **username** + display name + capabilities (any mix of student, teacher, parent)  
 3. Welcome: optional school (Skip OK) · avatars = **initials** · parents enter **date of birth** (18+)  
-4. Dashboard + **My progress** (`/progress`) for students/teachers, **Parent portal** (`/family`) when parent-capable (parent-only homes to Family) → practice / conferences / profile  
+4. Dashboard + **My progress** (`/progress`) for students/teachers, **Parent portal** (`/family`) when parent-capable (parent-only homes to Family) → practice / **Procedure** (`/motions`) / conferences / profile  
 
 Google proves the email; no Resend verification code in the current UI.
 
@@ -67,7 +67,9 @@ Google proves the email; no Resend verification code in the current UI.
 | Profile photos (Storage) | Paused (Blaze) |
 | Email/password + Resend codes | Parked (needs verified sending domain) |
 | AI (Gemini) | Phase 3 — deferred (free/Spark path TBD) |
-| RoP / Scripts of Motions | **Next — Phase 5.1** |
+| RoP / Scripts of Motions | Done — Phase 5.1 (`/motions`) |
+| Terms and Conditions | Done — with 5.1 (`/terms`) |
+| Header / nav chrome | Done — single-row desktop nav, hamburger under ~1024px; **do not** darken hero/auth photos |
 | Conference filters | Phase 4 (after 5.1) |
 | Tutorials / inbox / drafting tools / notes | Phase 5 (after 5.1) |
 | In-app calling (voice / video) | Phase 6 — later |
@@ -117,8 +119,8 @@ Rules: `firebase/firestore.rules` · Parked Worker: `workers/email-verification/
 5. ~~**Parent / guardian portal V1** (`/family`)~~ **Done**  
 6. ~~Parent activity reliability + student `/progress`~~ **Done**  
 7. ~~**Phase 2.7 Founder Stats + GTM metrics**~~ **Done** ([GTM.md](./GTM.md))  
-8. Publish rules + `/admin` backfill (ops) · **Phase 5.1 Scripts of Motions / RoP cheat sheets** ⬅️ next  
-9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred) · **Phase 6** calling · optional GA4  
+8. ~~Terms and Conditions + Phase 5.1 Procedure~~ **Done**  
+9. Rest of Phase 5 · Phase 4 conferences · Phase 3 AI (deferred; integrity-bound) · **Phase 6** calling · optional GA4  
 
 ---
 
@@ -153,14 +155,14 @@ Extra MUN help is welcome — **integrity first:** tools guide format/procedure 
 - **Online conference practice:** real-time committee rooms for remote sessions and virtual practice rounds.
 - **In-person conference operations:** chair-facing tools for inputting and organizing MUN data from physical conferences.
 - **Smart Research Simulation Tools:**
-  - Procedural / **Rules-of-Procedure cheat sheets** ("Scripts of Motions") — **Phase 5.1 next**
+  - Procedural / **Rules-of-Procedure cheat sheets** ("Scripts of Motions") — **Phase 5.1 done** (`/motions`)
   - Interactive Clause Builders / **resolution formatting** (later Phase 5)
   - Country Stance Aggregator (later Phase 5)
   - **Position paper drafting tools** (guided structure / templates; user writes every sentence) (later Phase 5)
 - **Prep notes & documents:** write notes **on the spot** in-app for later reference, **and/or** link/attach Google Docs, Slides, PDFs (not upload-only).
 - **Built-in AI prep assistant:** ask questions, get resource links and general answers — **does not edit** speeches, resolutions, position papers, or notes.
 - **In-app calling:** optional voice/video inside rooms (Phase 6); Meet/Zoom remains a fallback.
-- **Appearance themes (parked):** user-selectable color themes — at least a default **light** theme (current direction), a **dark** theme, and optionally a softer **warm / gold-accent** or high-contrast mode. Keep brand (navy + gold) recognizable across themes; don’t force dark UI. Current chrome: light app pages, dark header, gold nav underlines; **do not** brighten hero / login / signup photos to “fix” contrast.
+- **Appearance themes (parked):** user-selectable color themes — at least a default **light** theme (current direction), a **dark** theme, and optionally a softer **warm / gold-accent** or high-contrast mode. Keep brand (navy + gold) recognizable across themes; don’t force dark UI. Current chrome: light app pages, dark header, gold nav underlines, compact single-row nav (hamburger under ~1024px); **do not** darken or brighten hero / login / signup photos to “fix” contrast.
 
 ---
 
@@ -172,3 +174,4 @@ Extra MUN help is welcome — **integrity first:** tools guide format/procedure 
 | **README.md** | Setup, flow, layout |
 | **ROADMAP.md** | Phases, checklists, decisions |
 | **GTM.md** | Go-to-market plan + metrics for Founder's Stats |
+| **TERMS.md** | Product Terms and Conditions draft (same substance as `/terms`) |

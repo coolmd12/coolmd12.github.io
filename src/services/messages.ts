@@ -11,6 +11,7 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import type { RoomMessage } from '../types/committee';
 import { normalizeChatText } from './committeeRoomLogic';
+import { bumpProductCounter } from './stats';
 
 function requireDb() {
   if (!isFirebaseConfigured || !db) {
@@ -54,6 +55,7 @@ export async function sendMessage(input: {
   };
   const { messageId: _id, ...payload } = message;
   await setDoc(messageRef, payload);
+  void bumpProductCounter('chatMessages');
   return message;
 }
 

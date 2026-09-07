@@ -588,6 +588,10 @@ const CommitteeRoomPage: React.FC = () => {
           <p className="muted">
             Status: <strong>{room.currentStatus.replace(/_/g, ' ')}</strong> · You are{' '}
             <strong>{formatSeatLabel(me.role, me.displayName)}</strong>
+            {' · '}
+            <Link to="/motions" target="_blank" rel="noreferrer">
+              Procedure help
+            </Link>
           </p>
           {room.meetingLink ? (
             <p>

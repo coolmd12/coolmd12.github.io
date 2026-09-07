@@ -37,7 +37,9 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 | Dashboard **Your activity** timeline                               | Done — hosted/joined rooms, classrooms, usage chips                         |
 | Live committee room (speakers, motions, timers, chat)              | Phase 2 done — core floor, chat, session start/stop, audio cues             |
 | AI practice + prep Q&A assistant (Gemini)                          | Later (Phase 3)                                                             |
-| RoP cheat sheets · Scripts of Motions                              | **Next — Phase 5.1**                                                        |
+| RoP cheat sheets · Scripts of Motions                              | Done — Phase 5.1 (`/motions`)                                               |
+| Terms and Conditions (practice vs conference · honesty · AI)       | Done — with 5.1 (`/terms`)                                                  |
+| Header / nav chrome                                                | Done — single-row desktop nav + hamburger under ~1024px; photos unchanged   |
 | Resolution / position-paper tools · prep notes · tutorials         | Later (rest of Phase 5)                                                     |
 | Conference filters / ops                                           | Later (Phase 4, after 5.1)                                                  |
 | **In-app calling** (voice / video inside rooms)                    | Later (Phase 6) — Meet/Zoom links until then                                |
@@ -62,7 +64,7 @@ GoMUN Delegate Arena is a **classroom-private** MUN practice app:
 4. **Dashboard** — teachers create classrooms; anyone can join with an invite code; dual-role users see both
 5. **My progress** (`/progress`) — own activity timeline + monthly summaries (students/teachers; not parent-only)
 6. **Classroom** — members list, invite sharing (owner), optional Meet/Zoom links
-7. **Rooms / Practice / Conferences / Profile** — open committee floors, explore modes, find real MUNs, edit profile anytime
+7. **Rooms / Practice / Procedure / Conferences / Profile** — open committee floors, explore modes, Scripts of Motions (`/motions`), find real MUNs, edit profile anytime
 
 Parents skip the dashboard and land on **Parent portal** (`/family`) after login.
 
@@ -154,7 +156,8 @@ Do **not** commit `.env.local` or secrets.
 
 | Path                                 | Purpose                                                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------ |
-| `src/pages/`                         | Screens (landing, auth, welcome, dashboard, progress, rooms, admin, family, …) |
+| `src/pages/`                         | Screens (landing, auth, welcome, dashboard, progress, motions, terms, rooms, admin, family, …) |
+| `src/data/motionScripts.ts`          | Static GoMUN Practice Script for `/motions`                                    |
 | `src/services/`                      | Auth, classrooms, rooms, motions, messages, activity, stats                    |
 | `src/contexts/AuthContext.tsx`       | Signed-in user + profile                                                       |
 | `workers/email-verification/`        | Parked Cloudflare Worker for email codes                                       |
@@ -162,6 +165,8 @@ Do **not** commit `.env.local` or secrets.
 | `firebase/storage.rules`             | Avatars (when Storage is enabled later)                                        |
 | `OUTLINE.md`                         | Condensed README + roadmap                                                     |
 | `ROADMAP.md`                         | Full phased product plan                                                       |
+| `GTM.md`                             | Go-to-market + Founder's Stats metric plan                                     |
+| `TERMS.md`                           | Product Terms and Conditions draft                                             |
 | `.github/workflows/deploy-pages.yml` | GitHub Pages deploy                                                            |
 
 
@@ -208,7 +213,7 @@ An in-app AI (planned with Gemini in Phase 3) that users can ask questions of an
 
 ### Appearance themes (parked)
 
-User-selectable color themes later — default **light** (current direction), optional **dark**, optional **warm / gold-accent** or high-contrast. Same layout and GoMUN brand; token swap only. Do not force dark mode. Do not brighten hero / login / signup photos.
+User-selectable color themes later — default **light** (current direction), optional **dark**, optional **warm / gold-accent** or high-contrast. Same layout and GoMUN brand; token swap only. Do not force dark mode. Do not darken or brighten hero / login / signup photos. Header is a compact single-row navy bar (hamburger under ~1024px).
 
 ### In-app calling (Phase 6)
 
@@ -227,9 +232,12 @@ Optional voice (then video) **inside** a live committee room so clubs don’t *h
 | [README.md](./README.md)   | Setup + how the app works today                |
 | [ROADMAP.md](./ROADMAP.md) | Phases, decisions, what’s next                 |
 | [GTM.md](./GTM.md)         | Go-to-market plan + Founder Stats metric needs |
+| [TERMS.md](./TERMS.md)     | Product Terms and Conditions draft             |
 
 
-**Next steps:** (1) Publish `firebase/firestore.rules` + founder `/admin` backfill if not done. (2) **Phase 5.1** — Scripts of Motions / RoP cheat sheets. Then rest of Phase 5, then Phase 4 conferences. Phase 3 AI stays deferred; Phase 6 calling later. Optional GA4 after baselines. Room UX polish anytime.
+**Next steps:** Rest of Phase 5 (tutorials / notes / drafting structure) or Phase 4 conference filters — discuss next. Phase 3 AI stays deferred and integrity-bound. Keep Founder's Stats baselines + GTM cadence. Room UX polish anytime.
+
+**Legal note:** On-site Terms and Conditions (`/terms`, [TERMS.md](./TERMS.md)) are a product draft for user expectations. Have them reviewed by a lawyer before treating them as formal legal advice or relying on them in a dispute. Procedure (`/motions`) is a practice aid — not official conference RoP.
 
 **Founder's Stats (Phase 2.7 shipped):** Live counters bump from service writes into `stats/product`; registered users stay on `stats/app`. See [ROADMAP.md](./ROADMAP.md) § Phase 2.7 and [GTM.md](./GTM.md).
 

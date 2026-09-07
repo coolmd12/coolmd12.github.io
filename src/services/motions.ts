@@ -11,6 +11,7 @@ import {
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import type { Motion, MotionType, ProceduralVote, Room, RoomStatus } from '../types/committee';
 import { tallyVotes } from './committeeRoomLogic';
+import { bumpProductCounter } from './stats';
 
 function requireDb() {
   if (!isFirebaseConfigured || !db) {
@@ -58,6 +59,7 @@ export async function proposeMotion(input: {
   };
   const { motionId: _id, ...payload } = motion;
   await setDoc(motionRef, payload);
+  void bumpProductCounter('motionsProposed');
   return motion;
 }
 
@@ -97,6 +99,7 @@ export async function castMotionVote(
     }
     tx.update(motionRef, { [`votes.${userId}`]: vote });
   });
+  void bumpProductCounter('votesCast');
 }
 
 export async function closeMotionVote(roomId: string, motionId: string): Promise<Motion> {
