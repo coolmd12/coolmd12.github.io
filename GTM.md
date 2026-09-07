@@ -577,7 +577,7 @@ Record GTM choices here so the plan stays honest.
 | | Phase 2.7 shipped (`stats/product` + `/admin` panels) | Founder must publish rules + run backfill once |
 | 2026-09-06 | **Next build = Phase 5.1** Scripts of Motions / RoP cheat sheets (before Phase 4) | Strengthens procedure floor; education-first; Spark-friendly; helps GTM activation |
 | | Ship **Terms and Conditions** with 5.1 (academic honesty · conference AI policies · practice vs events) | Reduce accountability risk; many conferences ban generative AI in committee / for papers |
-| | Phase 5.1 + Terms and Conditions shipped (`/motions`, `/terms`, TERMS.md) | Practice script only; strong disclaimers; counsel review still recommended |
+| | Phase 5.1 + Terms and Conditions shipped (`/motions`, `/terms-and-conditions`, TERMS_AND_CONDITIONS.md) | Practice script only; strong disclaimers; counsel review still recommended |
 | 2026-09-07 | Header/nav chrome: single-row desktop + hamburger; keep navy/gold; **do not** darken photos | Founder Stats + Procedure links overflowed the bar; image overlays stay as-designed |
 
 ---
@@ -590,6 +590,6 @@ Record GTM choices here so the plan stays honest.
 | [OUTLINE.md](./OUTLINE.md) | Product overview |
 | [ROADMAP.md](./ROADMAP.md) | Build phases — 5.1 + Terms and Conditions shipped; rest of Phase 5 or Phase 4 next |
 | [README.md](./README.md) | Setup and current app flow |
-| [TERMS.md](./TERMS.md) | Product Terms and Conditions draft |
+| [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) | Product Terms and Conditions draft |
 
 **Related build:** Phase 2.7 product counters and Phase 5.1 Procedure + Terms and Conditions are shipped. Publish Firestore rules, run `/admin` backfill once. Next product work: rest of Phase 5 or Phase 4.

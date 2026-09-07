@@ -21,7 +21,7 @@ import { AdminStatsPage } from './pages/AdminStatsPage';
 import { FamilyPage } from './pages/FamilyPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { MotionsPage } from './pages/MotionsPage';
-import { TermsPage } from './pages/TermsPage';
+import { TermsAndConditionsPage } from './pages/TermsAndConditionsPage';
 
 function LastPathTracker() {
   const location = useLocation();
@@ -42,7 +42,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/conferences" element={<ConferencesPage />} />
             <Route path="/practice" element={<PracticePage />} />
-            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
             <Route path="/rooms" element={<RoomsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />

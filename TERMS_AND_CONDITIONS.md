@@ -1,6 +1,6 @@
 # GoMUN Delegate Arena — Terms and Conditions
 
-> Product draft for user expectations. Same substance as the on-site page [`/terms`](https://coolmd12.github.io/terms) (`src/pages/TermsPage.tsx`). **Not legal advice.** Have counsel review before relying on this in a dispute.
+> Product draft for user expectations. Same substance as the on-site page [`/terms-and-conditions`](https://coolmd12.github.io/terms-and-conditions) (`src/pages/TermsAndConditionsPage.tsx`). **Not legal advice.** Have counsel review before relying on this in a dispute.
 
 **Effective:** September 6, 2026  
 **Founder:** Dhyanvi Mehta
@@ -88,8 +88,8 @@ Questions about these Terms and Conditions: contact the founder via the project 
 
 | File | Purpose |
 | --- | --- |
-| **[TERMS.md](./TERMS.md)** | This draft |
-| On-site `/terms` | Same substance for users |
+| **[TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md)** | This draft |
+| On-site `/terms-and-conditions` | Same substance for users |
 | [OUTLINE.md](./OUTLINE.md) | Product overview |
 | [ROADMAP.md](./ROADMAP.md) | Phase 5.1 + legal checklist |
 | [GTM.md](./GTM.md) | Integrity / positioning |
