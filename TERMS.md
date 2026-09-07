@@ -44,7 +44,7 @@ Educational resources that explain procedure (such as motion scripts) are not th
 - Do not harass others, attempt unauthorized access, scrape the service abusively, or use GoMUN for unlawful purposes.
 - Classroom and room content you post should be appropriate for a high-school educational setting.
 
-We may suspend or terminate accounts that violate these Terms or create safety or abuse risks.
+We may suspend or terminate accounts that violate these Terms and Conditions or create safety or abuse risks.
 
 ---
 
@@ -74,13 +74,13 @@ To the fullest extent permitted by law, GoMUN and its founder are not liable for
 
 ## 9. Changes
 
-We may update these Terms by posting a new version on this page with an updated effective date. Continued use after changes means you accept the revised Terms.
+We may update these Terms and Conditions by posting a new version on this page with an updated effective date. Continued use after changes means you accept the revised Terms and Conditions.
 
 ---
 
 ## 10. Contact
 
-Questions about these Terms: contact the founder via the project site or the email associated with the GoMUN Firebase / GitHub project as published by Dhyanvi Mehta.
+Questions about these Terms and Conditions: contact the founder via the project site or the email associated with the GoMUN Firebase / GitHub project as published by Dhyanvi Mehta.
 
 ---
 

@@ -14,9 +14,9 @@ export function TermsPage() {
           <p className="eyebrow">Legal</p>
           <h1>Terms and Conditions</h1>
           <p className="muted">
-            Effective {EFFECTIVE}. These Terms explain how GoMUN Delegate Arena
+            Effective {EFFECTIVE}. These Terms and Conditions explain how GoMUN Delegate Arena
             (&quot;GoMUN,&quot; &quot;we,&quot; &quot;us&quot;) may be used. By creating an account or
-            using the site, you agree to these Terms.
+            using the site, you agree to these Terms and Conditions.
           </p>
         </div>
       </header>
@@ -91,8 +91,8 @@ export function TermsPage() {
           </li>
         </ul>
         <p>
-          We may suspend or terminate accounts that violate these Terms or create safety or abuse
-          risks.
+          We may suspend or terminate accounts that violate these Terms and Conditions or
+          create safety or abuse risks.
         </p>
 
         <h2>5. Parent / guardian features</h2>
@@ -130,19 +130,21 @@ export function TermsPage() {
 
         <h2>9. Changes</h2>
         <p>
-          We may update these Terms by posting a new version on this page with an updated
-          effective date. Continued use after changes means you accept the revised Terms.
+          We may update these Terms and Conditions by posting a new version on this page with an
+          updated effective date. Continued use after changes means you accept the revised Terms
+          and Conditions.
         </p>
 
         <h2>10. Contact</h2>
         <p>
-          Questions about these Terms: contact the founder via the project site or the email
-          associated with the GoMUN Firebase / GitHub project as published by Dhyanvi Mehta.
+          Questions about these Terms and Conditions: contact the founder via the project site
+          or the email associated with the GoMUN Firebase / GitHub project as published by
+          Dhyanvi Mehta.
         </p>
 
         <p className="muted legal-counsel-note">
-          This page is a product Terms draft for user expectations. It is not legal advice. Have
-          counsel review it before relying on it in a formal dispute.
+          This page is a product Terms and Conditions draft for user expectations. It is not
+          legal advice. Have counsel review it before relying on it in a formal dispute.
         </p>
 
         <p className="panel-footer-link">

@@ -289,18 +289,18 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - **Signed-in** for full page; parent-only accounts hide nav (same as Practice).
 - Static curated content (`src/data/…`); no AI; no Firestore.
 - Print-friendly CSS if easy.
-- **Integrity:** Reference / practice aid only — **not** official conference RoP, **not** writing help, **not** a substitute for a conference’s academic-honesty or AI policy. Users must follow their conference’s rules (many ban generative AI during conference / for papers). See **Legal / Terms** below and on-site `/terms`.
+- **Integrity:** Reference / practice aid only — **not** official conference RoP, **not** writing help, **not** a substitute for a conference’s academic-honesty or AI policy. Users must follow their conference’s rules (many ban generative AI during conference / for papers). See **Legal / Terms and Conditions** below and on-site `/terms`.
 
 **Build:**
 
 - [x] Ruleset = GoMUN Practice Script UI + disclaimer
 - [x] Nav / Practice / in-room discoverability
 - [x] Optional print layout
-- [x] Link Terms + academic-integrity callout on the page
+- [x] Link Terms and Conditions + academic-integrity callout on the page
 
 #### Legal / Terms and Conditions (ship with or just before Phase 5.1) ⬅️ done with 5.1
 
-**Goal:** Public Terms that set expectations for practice vs real conferences, academic honesty, and (future) AI tools — so GoMUN is not positioned as a cheating aid.
+**Goal:** Public Terms and Conditions that set expectations for practice vs real conferences, academic honesty, and (future) AI tools — so GoMUN is not positioned as a cheating aid.
 
 **Must cover (draft; have a lawyer review before relying on it in a dispute):**
 
@@ -315,7 +315,7 @@ Note: `/rooms` hub lists/creates open committee rooms. Later: AI practice rooms 
 - [x] `/terms` page + footer **Terms and Conditions** link
 - [x] Repo draft [TERMS.md](./TERMS.md) (same substance as the page)
 - [x] Cross-link from Procedure page and Practice hub
-- [x] Note in README that Terms are a product draft, not a substitute for counsel
+- [x] Note in README that Terms and Conditions are a product draft, not a substitute for counsel
 
 #### Phase 5 — later slices (parked until after 5.1)
 
@@ -408,7 +408,7 @@ Two future product lanes will expand the platform beyond basic classroom practic
 - **Student My progress:** `/progress` uses the same activity log + room/classroom backfill as the parent portal, for the signed-in student.
 - **Parent activity queries:** Linked parents read member docs by classroom id (rules: `linkedParentOf`); do not use `collectionGroup('members')` with bare `documentId()`. Isolate per-source failures.
 - **AI & prep tools vs plagiarism:** GoMUN may add RoP cheat sheets, resolution formatting, position-paper structure tools, prep notes (write + link Docs/Slides/PDFs), and an AI that answers questions / finds resources. None of these may write or rewrite the user’s graded/submitted work for them. **Conference policies vary** (many ban generative AI during committee and/or for papers); users must follow their conference and school rules. Terms and Conditions (`/terms`) state this explicitly.
-- **Next product bet:** Rest of Phase 5 (tutorials / notes / drafting structure) or Phase 4 conference filters — discuss next. Phase 5.1 Procedure + Terms are shipped.
+- **Next product bet:** Rest of Phase 5 (tutorials / notes / drafting structure) or Phase 4 conference filters — discuss next. Phase 5.1 Procedure + Terms and Conditions are shipped.
 
 ---
 
